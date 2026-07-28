@@ -15,7 +15,7 @@
     </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="Bool2Vis" />
+        <!-- Bool2Vis lives in Themes/Aver.xaml so every window can reach it. -->
 
         <!-- ==================================================== engine slot card -->
         <DataTemplate x:Key="EngineCard" DataType="{x:Type vm:EngineCardViewModel}">
@@ -96,10 +96,47 @@
                             <Button Content="LAUNCH" Style="{StaticResource AccentButton}"
                                     Command="{Binding DataContext.Launch, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding}" />
-                            <Button Content="Folder" Style="{StaticResource GhostButton}" Margin="8,0,0,0"
-                                    Padding="14,9"
-                                    Command="{Binding DataContext.Reveal, RelativeSource={RelativeSource AncestorType=Window}}"
-                                    CommandParameter="{Binding Root}" />
+
+                            <!-- Options, permanently beside Launch, as Epic's engine slots have.
+                                 A ToggleButton driving a Popup rather than a ContextMenu, so it opens
+                                 on left-click where the user is already aiming. -->
+                            <Grid Margin="8,0,0,0">
+                                <ToggleButton x:Name="OptToggle" Style="{StaticResource ComboToggle}"
+                                              Height="36" MinWidth="104" Cursor="Hand">
+                                    <TextBlock Text="Options" Foreground="{StaticResource Text}"
+                                               FontFamily="{StaticResource UiFontMedium}" FontSize="13" />
+                                </ToggleButton>
+                                <Popup IsOpen="{Binding IsChecked, ElementName=OptToggle, Mode=TwoWay}"
+                                       StaysOpen="False" Placement="Bottom" AllowsTransparency="True"
+                                       PopupAnimation="Fade" HorizontalOffset="0" VerticalOffset="3">
+                                    <Border Background="{StaticResource BgPanel}" CornerRadius="4"
+                                            BorderBrush="{StaticResource Divider}" BorderThickness="1"
+                                            MinWidth="228" Padding="5">
+                                        <StackPanel>
+                                            <Button Style="{StaticResource MenuItemButton}"
+                                                    Content="Modify installation..."
+                                                    ToolTip="Choose modules. Resolves to a published edition."
+                                                    Command="{Binding DataContext.ModifyInstall, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}" />
+                                            <Button Style="{StaticResource MenuItemButton}"
+                                                    Content="Verify files"
+                                                    ToolTip="Re-hash every file against what was recorded at install."
+                                                    Command="{Binding DataContext.VerifyFiles, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}" />
+                                            <Button Style="{StaticResource MenuItemButton}"
+                                                    Content="Show in Explorer"
+                                                    Command="{Binding DataContext.Reveal, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding Root}" />
+                                            <Border Height="1" Background="{StaticResource Divider}" Margin="6,5" />
+                                            <Button Style="{StaticResource MenuItemButton}"
+                                                    Content="Remove this version"
+                                                    Foreground="{StaticResource Fail}"
+                                                    Command="{Binding DataContext.Uninstall, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
+                            </Grid>
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
@@ -280,9 +317,21 @@
 
                 <StackPanel Grid.Row="1" Margin="34,4,34,20">
                     <Grid>
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource H1}" Text="{Binding PageTitle}" />
-                            <TextBlock Style="{StaticResource Dim}" Text="{Binding PageSubtitle}" Margin="0,3,0,0" />
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource H1}" Text="{Binding PageTitle}" />
+                                <TextBlock Style="{StaticResource Dim}" Text="{Binding PageSubtitle}" Margin="0,3,0,0" />
+                            </StackPanel>
+                            <!-- Adds an engine slot on the newest version, as Epic's engine tab does.
+                                 Disabled, with the reason in its tooltip, when the feed offers nothing. -->
+                            <Button Style="{StaticResource IconButton}" Content="&#xE710;" Margin="16,6,0,0"
+                                    VerticalAlignment="Center"
+                                    Command="{Binding AddSlot}"
+                                    Visibility="{Binding IsEngines, Converter={StaticResource Bool2Vis}}">
+                                <Button.ToolTip>
+                                    <ToolTip Content="{Binding AddSlotTip}" />
+                                </Button.ToolTip>
+                            </Button>
                         </StackPanel>
                         <Button Content="Refresh" Style="{StaticResource GhostButton}" Padding="16,8"
                                 HorizontalAlignment="Right" VerticalAlignment="Top"
@@ -300,19 +349,17 @@
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
 
-                        <!-- Offered by the feed. Below what is installed, because the common case is
-                             launching something you already have. -->
-                        <StackPanel Margin="0,4,0,14"
-                                    Visibility="{Binding Available.Count, Converter={StaticResource NonZeroToVis}}">
-                            <TextBlock Style="{StaticResource H2}" Text="AVAILABLE TO INSTALL" Margin="0,0,0,10" />
-                            <ItemsControl ItemsSource="{Binding Available}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Style="{StaticResource Card}" Width="330" Margin="0,0,16,16" Padding="18,16">
-                                            <StackPanel>
+                        <!-- Slots the user has added but not installed. Below what is installed,
+                             because the common case is launching something you already have. -->
+                        <ItemsControl ItemsSource="{Binding Slots}" Margin="0,4,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource Card}" Width="330" Margin="0,0,16,16" Padding="18,16">
+                                        <StackPanel>
+                                            <Grid>
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="{Binding Version}" FontSize="22"
                                                                Foreground="{StaticResource Text}"
@@ -321,41 +368,61 @@
                                                                Foreground="{StaticResource TextDim}" Margin="10,10,0,0"
                                                                FontFamily="{StaticResource UiFontMedium}" />
                                                 </StackPanel>
-
-                                                <ItemsControl ItemsSource="{Binding Modules}" Margin="0,8,0,0">
-                                                    <ItemsControl.ItemsPanel>
-                                                        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
-                                                    </ItemsControl.ItemsPanel>
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <Border Style="{StaticResource ChipOff}">
-                                                                <TextBlock Text="{Binding}" FontSize="11"
-                                                                           Foreground="{StaticResource TextDim}"
-                                                                           FontFamily="{StaticResource UiFont}" />
-                                                            </Border>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-
-                                                <ProgressBar Height="4" Margin="0,6,0,0" Minimum="0" Maximum="100"
-                                                             Value="{Binding ProgressPercent, Mode=OneWay}"
-                                                             Background="{StaticResource BgPanelHi}"
-                                                             Foreground="{StaticResource Accent}" BorderThickness="0"
-                                                             Visibility="{Binding Busy, Converter={StaticResource Bool2Vis}}" />
-                                                <TextBlock Style="{StaticResource Dim}" Text="{Binding Status}"
-                                                           Margin="0,5,0,0" TextTrimming="CharacterEllipsis" />
-
-                                                <Button Content="INSTALL" Style="{StaticResource AccentButton}"
-                                                        HorizontalAlignment="Left" Margin="0,12,0,0"
-                                                        IsEnabled="{Binding NotBusy}"
-                                                        Command="{Binding DataContext.InstallVersion, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                <Button Style="{StaticResource IconButton}" Content="&#xE711;"
+                                                        Width="24" Height="24" FontSize="9"
+                                                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                        ToolTip="Remove this slot"
+                                                        Command="{Binding DataContext.RemoveSlot, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding}" />
-                                            </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
+                                            </Grid>
+
+                                            <!-- The version chooser. Hidden when there is only one
+                                                 choice: a caret that cannot open is noise. -->
+                                            <ComboBox Style="{StaticResource DarkCombo}" Margin="0,10,0,0"
+                                                      ItemsSource="{Binding Options}"
+                                                      SelectedItem="{Binding Selected, Mode=TwoWay}"
+                                                      IsEnabled="{Binding NotBusy}"
+                                                      Visibility="{Binding HasChoice, Converter={StaticResource Bool2Vis}}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Label}" />
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+
+                                            <ItemsControl ItemsSource="{Binding Modules}" Margin="0,10,0,0">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Style="{StaticResource ChipOff}">
+                                                            <TextBlock Text="{Binding}" FontSize="11"
+                                                                       Foreground="{StaticResource TextDim}"
+                                                                       FontFamily="{StaticResource UiFont}" />
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                            <ProgressBar Height="4" Margin="0,6,0,0" Minimum="0" Maximum="100"
+                                                         Value="{Binding ProgressPercent, Mode=OneWay}"
+                                                         Background="{StaticResource BgPanelHi}"
+                                                         Foreground="{StaticResource Accent}" BorderThickness="0"
+                                                         Visibility="{Binding Busy, Converter={StaticResource Bool2Vis}}" />
+                                            <TextBlock Style="{StaticResource Dim}" Text="{Binding Status}"
+                                                       Margin="0,5,0,0" TextTrimming="CharacterEllipsis" />
+
+                                            <Button Content="INSTALL" Style="{StaticResource AccentButton}"
+                                                    HorizontalAlignment="Left" Margin="0,12,0,0"
+                                                    IsEnabled="{Binding NotBusy}"
+                                                    Command="{Binding DataContext.InstallVersion, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
                         <!-- Nothing published is a NORMAL state, so it gets a calm line rather than a
                              warning card. Only an unreachable feed is coloured as a problem. -->

@@ -2,6 +2,11 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:app="clr-namespace:Aver.Launcher.App">
 
+    <!-- App-wide, NOT in MainWindow's own resources. A converter declared on one Window is invisible
+         to every other, and the options dialog crashed on open with "Cannot find resource named
+         Bool2Vis" because of exactly that. -->
+    <BooleanToVisibilityConverter x:Key="Bool2Vis" />
+
     <app:NullToVisibilityConverter x:Key="NullToVis" />
     <app:ZeroToVisibilityConverter x:Key="ZeroToVis" />
     <app:NonZeroToVisibilityConverter x:Key="NonZeroToVis" />
@@ -229,6 +234,160 @@
     <Style x:Key="ChipOff" TargetType="Border" BasedOn="{StaticResource Chip}">
         <Setter Property="Background" Value="#14FFFFFF" />
         <Setter Property="BorderBrush" Value="{StaticResource Divider}" />
+    </Style>
+
+    <!-- A row in the Options popup. Full-width hit area, left-aligned, hover-highlighted. -->
+    <Style x:Key="MenuItemButton" TargetType="Button">
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Foreground" Value="{StaticResource Text}" />
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="Padding" Value="11,8" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="b" Background="Transparent" CornerRadius="3"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="b" Property="Background" Value="#26F26B21" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+                            <Setter Property="Cursor" Value="Arrow" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Round icon button. The plus that adds an engine slot, and the x that removes one. -->
+    <Style x:Key="IconButton" TargetType="Button">
+        <Setter Property="Width" Value="30" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource TextDim}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="b" CornerRadius="15" Background="Transparent"
+                            BorderBrush="{StaticResource Divider}" BorderThickness="1"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="b" Property="Background" Value="{StaticResource Accent}" />
+                            <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource Accent}" />
+                            <Setter Property="Foreground" Value="White" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+                            <Setter Property="Cursor" Value="Arrow" />
+                            <Setter TargetName="b" Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+        Dark ComboBox. Templated from scratch because the stock one draws a light chrome that no
+        amount of brush setting removes, and this control sits on a near-black card.
+    -->
+    <Style x:Key="ComboToggle" TargetType="ToggleButton">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="b" Background="{StaticResource BgPanelHi}" CornerRadius="3"
+                            BorderBrush="{StaticResource Divider}" BorderThickness="1"
+                            SnapsToDevicePixels="True">
+                        <Grid>
+                            <ContentPresenter Margin="10,0,26,0" VerticalAlignment="Center" />
+                            <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="9"
+                                       Foreground="{StaticResource TextDim}"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource Accent}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="DarkComboItem" TargetType="ComboBoxItem">
+        <Setter Property="Foreground" Value="{StaticResource Text}" />
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                    <Border x:Name="b" Background="Transparent" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="b" Property="Background" Value="#33F26B21" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="b" Property="Background" Value="#1FF26B21" />
+                            <Setter Property="Foreground" Value="{StaticResource Accent}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="DarkCombo" TargetType="ComboBox">
+        <Setter Property="Foreground" Value="{StaticResource Text}" />
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource DarkComboItem}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid>
+                        <ToggleButton Style="{StaticResource ComboToggle}"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                      ClickMode="Press">
+                            <!-- Bound to SelectedItem with the ComboBox's own ItemTemplate, rather
+                                 than to SelectionBoxItem/SelectionBoxItemTemplate. That pair
+                                 rendered the item's ToString(), i.e. the raw type name, because the
+                                 generated selection-box template does not resolve through a
+                                 TemplateBinding inside a fully replaced control template. -->
+                            <ContentPresenter
+                                Content="{Binding SelectedItem, RelativeSource={RelativeSource TemplatedParent}}"
+                                ContentTemplate="{Binding ItemTemplate, RelativeSource={RelativeSource TemplatedParent}}" />
+                        </ToggleButton>
+                        <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom"
+                               AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                            <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource Divider}"
+                                    BorderThickness="1" CornerRadius="3" Margin="0,3,0,0"
+                                    MinWidth="{TemplateBinding ActualWidth}">
+                                <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto">
+                                    <ItemsPresenter />
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="ScrollHost" TargetType="ScrollViewer">

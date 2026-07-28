@@ -69,25 +69,77 @@ public sealed class EngineCardViewModel(EngineInstall install)
 /// <summary>A module chip with a hover explanation.</summary>
 public sealed record ChipViewModel(string Text, string? Tooltip);
 
-/// <summary>A version the feed offers that is not installed yet.</summary>
-public sealed class AvailableCardViewModel(string edition, string version, FeedEdition feed) : ObservableObject
+/// <summary>One (edition, version) the feed offers, as a dropdown entry.</summary>
+public sealed class SlotOption(string edition, string version, FeedEdition feed)
 {
-    private double _progress;
-    private string _status = string.Empty;
-    private bool _busy;
-
     public string Edition { get; } = edition;
 
     public string Version { get; } = version;
 
-    public string EditionName => Edition.ToUpperInvariant();
+    public FeedEdition Feed { get; } = feed;
+
+    /// <summary>What the dropdown shows: "0.1.0 - standard".</summary>
+    public string Label => $"{Version}  -  {Edition}";
 
     /// <summary>Modules this edition advertises, from the index rather than from a download.</summary>
     public IReadOnlyList<string> Modules => EngineOptions.All
         .Where(o => o.Kind == EngineOptionKind.Module
-                    && feed.Options.TryGetValue(o.Key, out bool on) && on)
+                    && Feed.Options.TryGetValue(o.Key, out bool on) && on)
         .Select(o => o.DisplayName)
         .ToList();
+}
+
+/// <summary>
+/// An engine SLOT: a place for a version you have not installed yet.
+/// </summary>
+/// <remarks>
+/// Modelled on the Unreal Engine tab in Epic's launcher, where the plus button adds a slot rather
+/// than installing something immediately. A slot starts on the newest version and carries a dropdown
+/// to pick an older one, so choosing a version is one control on the card rather than a wall of cards
+/// -- which matters here more than it does for Unreal, because Aver multiplies versions by editions
+/// and a card per combination would grow quadratically.
+/// </remarks>
+public sealed class EngineSlotViewModel : ObservableObject
+{
+    private double _progress;
+    private string _status = string.Empty;
+    private bool _busy;
+    private SlotOption _selected;
+
+    public EngineSlotViewModel(IReadOnlyList<SlotOption> options, SlotOption? initial = null)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        Options = options;
+        _selected = initial ?? options[0];
+    }
+
+    /// <summary>Everything the feed offers that is not already installed.</summary>
+    public IReadOnlyList<SlotOption> Options { get; }
+
+    /// <summary>The version this slot will install. Defaults to the newest.</summary>
+    public SlotOption Selected
+    {
+        get => _selected;
+        set
+        {
+            // The ComboBox can hand back null while its items are being rebuilt.
+            if (value is null || !Set(ref _selected, value)) return;
+            Raise(nameof(Version));
+            Raise(nameof(EditionName));
+            Raise(nameof(Modules));
+        }
+    }
+
+    public string Edition => Selected.Edition;
+
+    public string Version => Selected.Version;
+
+    public string EditionName => Selected.Edition.ToUpperInvariant();
+
+    public IReadOnlyList<string> Modules => Selected.Modules;
+
+    /// <summary>A slot with one choice hides its dropdown; a caret that cannot open is noise.</summary>
+    public bool HasChoice => Options.Count > 1;
 
     public bool Busy
     {

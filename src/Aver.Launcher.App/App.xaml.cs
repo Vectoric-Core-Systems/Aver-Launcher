@@ -2,6 +2,7 @@ using System.Windows;
 using Aver.Launcher.App.Services;
 using Aver.Launcher.Core;
 using Aver.Launcher.Platform;
+using Aver.Launcher.Updater;
 
 namespace Aver.Launcher.App;
 
@@ -27,6 +28,15 @@ public partial class App : Application
 
         var app = new App();
         app.InitializeComponent();
+
+        // Diagnostic, in the same spirit as --probe: opens the installation-options dialog against
+        // the configured feed and exits. A modal dialog is otherwise only reachable by clicking, and
+        // "does it render at all" is worth being able to answer without a mouse.
+        if (args.Contains("--options-preview", StringComparer.Ordinal))
+        {
+            return ShowOptionsPreview();
+        }
+
         return app.Run(new MainWindow());
     }
 
@@ -55,4 +65,36 @@ public partial class App : Application
 
         return report.CanRunEngine ? 0 : 1;
     }
+
+    private static int ShowOptionsPreview()
+    {
+        LauncherSettings settings = LauncherSettings.Load();
+        FeedSource source = FeedSource.Open(settings.FeedUrl);
+        FeedResult feed = source.GetIndexAsync().GetAwaiter().GetResult();
+
+        var candidates = new List<(string, string, IReadOnlyDictionary<string, bool>)>();
+        if (feed.Index is not null)
+        {
+            foreach ((string edition, FeedEdition fe) in feed.Index.Editions)
+            {
+                foreach (string v in fe.Versions)
+                {
+                    candidates.Add((edition, v, fe.Options));
+                }
+            }
+        }
+
+        if (candidates.Count == 0)
+        {
+            Console.Error.WriteLine("options-preview: the feed offers nothing to choose between.");
+            return 1;
+        }
+
+        var vm = new ViewModels.ModuleOptionsViewModel(
+            "Install Aver Engine 0.1.0", candidates, candidates[0].Item3);
+        var dlg = new ModuleOptionsWindow(vm);
+        dlg.ShowDialog();
+        return 0;
+    }
 }
+
