@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Aver.Launcher.Core/Aver.Launcher.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Aver.Launcher.Tests/Aver.Launcher.Tests.csproj" />
+  </Folder>
+</Solution>
