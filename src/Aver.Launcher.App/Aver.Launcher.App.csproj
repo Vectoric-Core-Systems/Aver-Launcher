@@ -6,7 +6,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>AverLauncher</AssemblyName>
     <RootNamespace>Aver.Launcher.App</RootNamespace>
-    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\launcher-icon.ico</ApplicationIcon>
     <RollForward>LatestMinor</RollForward>
     <!-- xaml codegen emits members this analyzer set dislikes; the C# is still warning clean. -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
@@ -42,7 +42,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Assets\logo.png" />
+    <Resource Include="Assets\launcher-logo.png" />
     <Resource Include="Fonts\Roboto-Regular.ttf" />
     <Resource Include="Fonts\Roboto-Medium.ttf" />
   </ItemGroup>

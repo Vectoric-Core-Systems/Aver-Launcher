@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!--
+    Aver Launcher app icon - PLACEHOLDER. The mark on the dark rounded tile, matching the engine's
+    icon treatment so the pair sit together in a taskbar.
+  -->
+  <rect width="256" height="256" rx="56" fill="#161618"/>
+
+  <ellipse cx="128" cy="196" rx="62" ry="15" fill="#F26B21" opacity="0.18"/>
+
+  <path d="M128 52 L196 91 L128 130 L60 91 Z"   fill="#F26B21"/>
+  <path d="M60 91 L128 130 L128 176 L60 137 Z"  fill="#B4501A"/>
+  <path d="M196 91 L128 130 L128 176 L196 137 Z" fill="#8A3410"/>
+
+  <rect x="52" y="206" width="152" height="13" rx="6.5" fill="#F26B21"/>
+</svg>

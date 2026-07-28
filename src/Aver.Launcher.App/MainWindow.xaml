@@ -228,7 +228,7 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="22,26,0,26">
-                        <Image Source="Assets/logo.png" Width="34" Height="34" />
+                        <Image Source="Assets/launcher-logo.png" Width="36" Height="36" />
                         <StackPanel VerticalAlignment="Center" Margin="11,0,0,0">
                             <TextBlock Text="AVER" FontSize="17" Foreground="{StaticResource Text}"
                                        FontFamily="{StaticResource UiFontMedium}" />

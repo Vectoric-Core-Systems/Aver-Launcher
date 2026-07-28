@@ -1,0 +1,33 @@
+<!--
+  viewBox is TIGHTER than the icon's 0 0 256 256. The tiled form needs breathing room inside its
+  rounded square, but a transparent mark placed on an existing surface does not: with the icon's
+  framing the artwork occupies about 60% of its box and reads as undersized beside its own wordmark.
+  Square and centred on the content (centre 128,135.5; extent 184) so nothing is distorted.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="36 43 184 184" width="256" height="256">
+  <!--
+    Aver Launcher mark - PLACEHOLDER.
+
+    Concept 2, "cube on a pad": the engine's own isometric cube lifted clear of a launch bar. The
+    cube says which engine this is; the bar says this app holds and starts it rather than being it.
+
+    Geometry is shared with the engine mark on purpose - same 30-degree isometric faces, same three
+    tones - so the two read as one family. The bar is the only thing separating them, which is why
+    the small-size variant beside this file thickens it: at 16 px a 13-unit bar is under one pixel.
+
+    Transparent: no tile. This is the form used on the launcher's nav rail and anywhere the mark
+    sits on an existing dark surface. launcher-icon.svg is the tiled form for the taskbar.
+  -->
+
+  <!-- Contact shadow. Sells the lift, and is the first thing to vanish when downscaled, which is
+       fine - it carries no meaning the silhouette does not already have. -->
+  <ellipse cx="128" cy="196" rx="62" ry="15" fill="#F26B21" opacity="0.18"/>
+
+  <!-- Cube: top, then left and right faces in descending tone. -->
+  <path d="M128 52 L196 91 L128 130 L60 91 Z"   fill="#F26B21"/>
+  <path d="M60 91 L128 130 L128 176 L60 137 Z"  fill="#B4501A"/>
+  <path d="M196 91 L128 130 L128 176 L196 137 Z" fill="#8A3410"/>
+
+  <!-- The launch pad. -->
+  <rect x="52" y="206" width="152" height="13" rx="6.5" fill="#F26B21"/>
+</svg>
