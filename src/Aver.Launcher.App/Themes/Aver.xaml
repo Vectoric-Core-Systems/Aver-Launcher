@@ -4,6 +4,7 @@
 
     <app:NullToVisibilityConverter x:Key="NullToVis" />
     <app:ZeroToVisibilityConverter x:Key="ZeroToVis" />
+    <app:NonZeroToVisibilityConverter x:Key="NonZeroToVis" />
     <app:InverseBooleanConverter x:Key="Not" />
     <app:KeyToBrushConverter x:Key="KeyToBrush" />
     <app:VerdictBrushConverter x:Key="VerdictBrush" />

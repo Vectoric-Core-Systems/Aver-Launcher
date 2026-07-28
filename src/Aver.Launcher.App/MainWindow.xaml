@@ -300,6 +300,89 @@
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
 
+                        <!-- Offered by the feed. Below what is installed, because the common case is
+                             launching something you already have. -->
+                        <StackPanel Margin="0,4,0,14"
+                                    Visibility="{Binding Available.Count, Converter={StaticResource NonZeroToVis}}">
+                            <TextBlock Style="{StaticResource H2}" Text="AVAILABLE TO INSTALL" Margin="0,0,0,10" />
+                            <ItemsControl ItemsSource="{Binding Available}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Style="{StaticResource Card}" Width="330" Margin="0,0,16,16" Padding="18,16">
+                                            <StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding Version}" FontSize="22"
+                                                               Foreground="{StaticResource Text}"
+                                                               FontFamily="{StaticResource UiFontMedium}" />
+                                                    <TextBlock Text="{Binding EditionName}" FontSize="11"
+                                                               Foreground="{StaticResource TextDim}" Margin="10,10,0,0"
+                                                               FontFamily="{StaticResource UiFontMedium}" />
+                                                </StackPanel>
+
+                                                <ItemsControl ItemsSource="{Binding Modules}" Margin="0,8,0,0">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Style="{StaticResource ChipOff}">
+                                                                <TextBlock Text="{Binding}" FontSize="11"
+                                                                           Foreground="{StaticResource TextDim}"
+                                                                           FontFamily="{StaticResource UiFont}" />
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+
+                                                <ProgressBar Height="4" Margin="0,6,0,0" Minimum="0" Maximum="100"
+                                                             Value="{Binding ProgressPercent, Mode=OneWay}"
+                                                             Background="{StaticResource BgPanelHi}"
+                                                             Foreground="{StaticResource Accent}" BorderThickness="0"
+                                                             Visibility="{Binding Busy, Converter={StaticResource Bool2Vis}}" />
+                                                <TextBlock Style="{StaticResource Dim}" Text="{Binding Status}"
+                                                           Margin="0,5,0,0" TextTrimming="CharacterEllipsis" />
+
+                                                <Button Content="INSTALL" Style="{StaticResource AccentButton}"
+                                                        HorizontalAlignment="Left" Margin="0,12,0,0"
+                                                        IsEnabled="{Binding NotBusy}"
+                                                        Command="{Binding DataContext.InstallVersion, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- Nothing published is a NORMAL state, so it gets a calm line rather than a
+                             warning card. Only an unreachable feed is coloured as a problem. -->
+                        <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,16,14"
+                                Visibility="{Binding NothingAvailable, Converter={StaticResource Bool2Vis}}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource H2}" Text="AVAILABLE TO INSTALL" />
+                                <TextBlock Style="{StaticResource Body}" Text="{Binding FeedNote}" Margin="0,8,0,0"
+                                           TextWrapping="Wrap" Foreground="{StaticResource TextDim}" />
+                                <TextBlock Style="{StaticResource Mono}" Text="{Binding FeedUrl}" Margin="0,6,0,0"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,16,14"
+                                Visibility="{Binding HasFeedError, Converter={StaticResource Bool2Vis}}">
+                            <StackPanel>
+                                <TextBlock Text="Could not reach the feed" FontSize="15"
+                                           Foreground="{StaticResource Warn}"
+                                           FontFamily="{StaticResource UiFontMedium}" />
+                                <TextBlock Style="{StaticResource Dim}" Text="{Binding FeedError}" Margin="0,5,0,0"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Style="{StaticResource Mono}" Text="{Binding FeedUrl}" Margin="0,6,0,0"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
                         <Border Style="{StaticResource Card}" Padding="26" Margin="0,0,16,0"
                                 Visibility="{Binding Engines.Count, Converter={StaticResource ZeroToVis}}">
                             <StackPanel>
@@ -381,15 +464,23 @@
                 <!-- status strip -->
                 <Border Grid.Row="3" Background="{StaticResource BgRail}" BorderBrush="{StaticResource Divider}"
                         BorderThickness="0,1,0,0" Height="30">
+                    <!-- Two columns rather than one cell: the status line can be long, and overlaying
+                         it on the feed URL made both unreadable. -->
                     <Grid Margin="34,0,20,0">
-                        <TextBlock Style="{StaticResource Dim}" Text="{Binding Status}" VerticalAlignment="Center"
-                                   FontSize="11" />
-                        <TextBlock Style="{StaticResource Dim}" Text="downloading is not implemented yet"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11"
-                                   Foreground="{StaticResource TextFaint}" />
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" MaxWidth="520" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource Dim}" Text="{Binding Status}"
+                                   VerticalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"
+                                   Margin="0,0,16,0" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource Dim}" Text="{Binding FeedUrl}"
+                                   VerticalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"
+                                   Foreground="{StaticResource TextFaint}" ToolTip="{Binding FeedUrl}" />
                     </Grid>
                 </Border>
             </Grid>
         </Grid>
     </Border>
 </Window>
+

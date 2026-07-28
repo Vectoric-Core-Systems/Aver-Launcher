@@ -69,6 +69,50 @@ public sealed class EngineCardViewModel(EngineInstall install)
 /// <summary>A module chip with a hover explanation.</summary>
 public sealed record ChipViewModel(string Text, string? Tooltip);
 
+/// <summary>A version the feed offers that is not installed yet.</summary>
+public sealed class AvailableCardViewModel(string edition, string version, FeedEdition feed) : ObservableObject
+{
+    private double _progress;
+    private string _status = string.Empty;
+    private bool _busy;
+
+    public string Edition { get; } = edition;
+
+    public string Version { get; } = version;
+
+    public string EditionName => Edition.ToUpperInvariant();
+
+    /// <summary>Modules this edition advertises, from the index rather than from a download.</summary>
+    public IReadOnlyList<string> Modules => EngineOptions.All
+        .Where(o => o.Kind == EngineOptionKind.Module
+                    && feed.Options.TryGetValue(o.Key, out bool on) && on)
+        .Select(o => o.DisplayName)
+        .ToList();
+
+    public bool Busy
+    {
+        get => _busy;
+        set { if (Set(ref _busy, value)) Raise(nameof(NotBusy)); }
+    }
+
+    public bool NotBusy => !_busy;
+
+    /// <summary>0..1 for the progress bar.</summary>
+    public double Progress
+    {
+        get => _progress;
+        set { if (Set(ref _progress, value)) Raise(nameof(ProgressPercent)); }
+    }
+
+    public double ProgressPercent => _progress * 100;
+
+    public string Status
+    {
+        get => _status;
+        set => Set(ref _status, value);
+    }
+}
+
 /// <summary>One project in the library.</summary>
 public sealed class ProjectCardViewModel(ProjectEntry entry, IReadOnlyList<EngineInstall> installs)
 {

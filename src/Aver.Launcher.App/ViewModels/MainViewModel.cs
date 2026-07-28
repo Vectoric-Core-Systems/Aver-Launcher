@@ -1,8 +1,11 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
 using Aver.Launcher.App.Services;
 using Aver.Launcher.Core;
+using Aver.Launcher.Platform;
+using Aver.Launcher.Updater;
 
 namespace Aver.Launcher.App.ViewModels;
 
@@ -30,6 +33,154 @@ public sealed class MainViewModel : ObservableObject
         Reveal = new RelayCommand(p => RevealInExplorer(p as string));
         OpenUrl = new RelayCommand(p => Browse(p as string));
         Go = new RelayCommand(p => { if (p is Page pg) CurrentPage = pg; });
+        InstallVersion = new RelayCommand(
+            p => _ = InstallAsync(p as AvailableCardViewModel),
+            p => (p as AvailableCardViewModel)?.NotBusy == true);
+    }
+
+    public RelayCommand InstallVersion { get; }
+
+    public ObservableCollection<AvailableCardViewModel> Available { get; } = [];
+
+    private readonly LauncherSettings _settings = LauncherSettings.Load();
+
+    public string FeedUrl => _settings.FeedUrl;
+
+    private string? _feedError;
+    private string _feedNote = string.Empty;
+    private bool _nothingAvailable;
+
+    /// <summary>Set only when the feed could not be reached or read. Not for "nothing published".</summary>
+    public string? FeedError
+    {
+        get => _feedError;
+        private set { Set(ref _feedError, value); Raise(nameof(HasFeedError)); }
+    }
+
+    public bool HasFeedError => _feedError is not null;
+
+    /// <summary>
+    /// True when the feed answered but has nothing to offer -- either nothing published, or
+    /// everything it lists is already installed.
+    /// </summary>
+    public bool NothingAvailable
+    {
+        get => _nothingAvailable;
+        private set => Set(ref _nothingAvailable, value);
+    }
+
+    /// <summary>The line shown in that case.</summary>
+    public string FeedNote
+    {
+        get => _feedNote;
+        private set => Set(ref _feedNote, value);
+    }
+
+    /// <summary>Reads the feed and lists versions that are not installed.</summary>
+    /// <remarks>
+    /// "Nothing published yet" is deliberately NOT an error. A repository that exists with no
+    /// releases is the normal state of a project that has not shipped, and dressing a 404 up as a
+    /// failure would make a healthy setup look broken.
+    /// </remarks>
+    private async Task LoadFeedAsync(IReadOnlyList<EngineInstall> installed)
+    {
+        Available.Clear();
+        FeedError = null;
+        FeedNote = string.Empty;
+        NothingAvailable = false;
+
+        FeedSource source = FeedSource.Open(_settings.FeedUrl);
+        FeedResult result = await source.GetIndexAsync().ConfigureAwait(true);
+
+        switch (result.Status)
+        {
+            case FeedStatus.Unreachable:
+                FeedError = result.Message;
+                return;
+
+            case FeedStatus.NoReleases:
+                NothingAvailable = true;
+                FeedNote = "Nothing available to install. "
+                           + (result.Message ?? "No releases have been published yet.");
+                return;
+
+            case FeedStatus.NotModified:
+                return;
+
+            default:
+                break;
+        }
+
+        var have = installed
+            .Select(i => $"{i.Edition.Id}/{i.Version}")
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach ((string edition, FeedEdition fe) in result.Index!.Editions)
+        {
+            foreach (string v in fe.Versions)
+            {
+                if (have.Contains($"{edition}/{v}")) continue;
+                Available.Add(new AvailableCardViewModel(edition, v, fe));
+            }
+        }
+
+        if (Available.Count == 0)
+        {
+            NothingAvailable = true;
+            FeedNote = "Nothing available to install. Every version the feed offers is already here.";
+        }
+    }
+
+    private async Task InstallAsync(AvailableCardViewModel? card)
+    {
+        if (card is null || card.Busy) return;
+        card.Busy = true;
+        card.Status = "starting";
+        try
+        {
+            FeedSource source = FeedSource.Open(_settings.FeedUrl);
+            FeedResult feed = await source.GetIndexAsync().ConfigureAwait(true);
+            if (feed.Index is null)
+            {
+                card.Status = feed.Message ?? "feed unavailable";
+                return;
+            }
+
+            VersionManifest manifest = await source.GetManifestAsync(feed.Index, card.Edition, card.Version)
+                                                   .ConfigureAwait(true);
+
+            string root = _settings.EffectiveInstallRoot;
+            Dictionary<string, string> inventory =
+                PackInstaller.BuildLocalInventory(EngineInstallStore.Scan(root));
+
+            (IRangeFetcher fetcher, Func<long> transferred) = source.OpenPack(manifest);
+            PackIndex packIndex = await FeedClient.GetPackIndexAsync(fetcher).ConfigureAwait(true);
+
+            var progress = new Progress<InstallProgress>(p =>
+            {
+                card.Progress = p.Fraction;
+                card.Status = p.Phase;
+            });
+
+            var installer = new PackInstaller(new WindowsFileSystemOps());
+            InstallReport report = await installer
+                .InstallAsync(manifest, packIndex, root, inventory, fetcher, progress)
+                .ConfigureAwait(true);
+
+            Status = $"Installed {card.Edition} {card.Version}: "
+                     + $"{report.FilesReused} file(s) reused, {transferred() / 1048576.0:F2} MB downloaded";
+            await LoadAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException
+                                       or NotSupportedException or TaskCanceledException)
+        {
+            card.Status = ex.Message;
+            Status = $"Install failed: {ex.Message}";
+        }
+        finally
+        {
+            card.Busy = false;
+        }
     }
 
     public RelayCommand Refresh { get; }
@@ -131,7 +282,7 @@ public sealed class MainViewModel : ObservableObject
 
     // ---- paths, shown on Settings ----
 
-    public string InstallRoot => EngineInstallStore.DefaultRoot;
+    public string InstallRoot => _settings.EffectiveInstallRoot;
     public string ProjectsRoot => RecentProjects.DefaultProjectsRoot;
     public string RecentsFile => RecentProjects.RecentsPath;
 
@@ -146,9 +297,12 @@ public sealed class MainViewModel : ObservableObject
         Status = "Scanning installs...";
         try
         {
-            IReadOnlyList<EngineInstall> installs = await Task.Run(() => EngineInstallStore.Scan()).ConfigureAwait(true);
+            IReadOnlyList<EngineInstall> installs = await Task.Run(() => EngineInstallStore.Scan(_settings.EffectiveInstallRoot)).ConfigureAwait(true);
             Engines.Clear();
             foreach (EngineInstall i in installs) Engines.Add(new EngineCardViewModel(i));
+
+            Status = "Reading the feed...";
+            await LoadFeedAsync(installs).ConfigureAwait(true);
 
             Status = "Reading projects...";
             IReadOnlyList<ProjectEntry> projects = await Task.Run(() => ProjectLibrary.Load()).ConfigureAwait(true);
@@ -262,3 +416,4 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 }
+

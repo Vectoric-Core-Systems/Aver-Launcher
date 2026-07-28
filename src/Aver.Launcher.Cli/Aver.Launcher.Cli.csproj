@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Aver.Launcher.Core\Aver.Launcher.Core.csproj" />
     <ProjectReference Include="..\Aver.Launcher.Platform\Aver.Launcher.Platform.csproj" />
+    <ProjectReference Include="..\Aver.Launcher.Updater\Aver.Launcher.Updater.csproj" />
   </ItemGroup>
 
 </Project>

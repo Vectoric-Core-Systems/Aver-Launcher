@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aver.Launcher.Core;
 using Aver.Launcher.Platform;
+using Aver.Launcher.Updater;
 
 namespace Aver.Launcher.Cli;
 
@@ -16,8 +17,75 @@ internal static class Program
             "probe" => Probe(json),
             "probe-gpu" => ProbeGpu(json),
             "edition" => Edition(args, json),
+            "install" => Install(args).GetAwaiter().GetResult(),
             _ => Help(),
         };
+    }
+
+    private static string? Opt(string[] args, string name)
+    {
+        int i = Array.IndexOf(args, name);
+        return i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
+    }
+
+    /// <summary>
+    /// Installs a version from a feed. This is the download path the UI uses, exposed as one
+    /// re-runnable command so the gate can measure it and report bytes actually transferred.
+    /// </summary>
+    private static async Task<int> Install(string[] args)
+    {
+        string? feedUrl = Opt(args, "--feed");
+        string? edition = Opt(args, "--edition");
+        string? root = Opt(args, "--root");
+        if (feedUrl is null || edition is null || root is null)
+        {
+            Console.Error.WriteLine("install: --feed <url> --edition <id> --root <dir> [--version <v>]");
+            return 2;
+        }
+
+        FeedSource source = FeedSource.Open(feedUrl);
+        FeedResult feed = await source.GetIndexAsync().ConfigureAwait(false);
+        if (feed.Index is null)
+        {
+            Console.Error.WriteLine($"install: {feed.Message ?? feed.Status.ToString()}");
+            return feed.Status == FeedStatus.NoReleases ? 0 : 1;
+        }
+        FeedIndex index = feed.Index;
+
+        if (!index.Editions.TryGetValue(edition, out FeedEdition? fe))
+        {
+            Console.Error.WriteLine($"install: the feed has no edition '{edition}'");
+            return 1;
+        }
+
+        string version = Opt(args, "--version") ?? fe.Latest;
+        VersionManifest manifest = await source.GetManifestAsync(index, edition, version).ConfigureAwait(false);
+
+        // Dedupe against everything already installed under this root, whatever its edition.
+        IReadOnlyList<EngineInstall> existing = EngineInstallStore.Scan(root);
+        Dictionary<string, string> inventory = PackInstaller.BuildLocalInventory(existing);
+
+        (IRangeFetcher fetcher, Func<long> transferred) = source.OpenPack(manifest);
+        PackIndex packIndex = await FeedClient.GetPackIndexAsync(fetcher).ConfigureAwait(false);
+
+        var installer = new PackInstaller(new WindowsFileSystemOps());
+        var progress = new Progress<InstallProgress>(p =>
+        {
+            if (p.BytesTotal > 0) Console.Write($"\r  {p.Phase}: {p.Fraction * 100,5:F1}%   ");
+        });
+
+        InstallReport report = await installer
+            .InstallAsync(manifest, packIndex, root, inventory, fetcher, progress)
+            .ConfigureAwait(false);
+
+        Console.WriteLine();
+        Console.WriteLine($"installed {edition} {version} -> {report.Root}");
+        Console.WriteLine($"  files      {report.FilesTotal} total, {report.FilesReused} reused, {report.FilesFetched} fetched");
+        Console.WriteLine($"  installed  {report.BytesInstalled / 1048576.0:F2} MB");
+        Console.WriteLine($"  pack       {report.PackSize / 1048576.0:F2} MB");
+        Console.WriteLine($"  ON WIRE    {transferred() / 1048576.0:F2} MB "
+                          + $"({100.0 * transferred() / Math.Max(1, report.PackSize):F1}% of pack) ");
+        return 0;
     }
 
     private static int Help()
@@ -194,3 +262,4 @@ internal static class Program
         WriteIndented = true,
     };
 }
+

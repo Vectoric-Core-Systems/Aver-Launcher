@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    averdist: turns a staged engine payload into a publishable feed. Run by hand; there is no CI.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>averdist</AssemblyName>
+    <RollForward>LatestMinor</RollForward>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Aver.Launcher.Core\Aver.Launcher.Core.csproj" />
+    <ProjectReference Include="..\Aver.Launcher.Updater\Aver.Launcher.Updater.csproj" />
+  </ItemGroup>
+
+</Project>

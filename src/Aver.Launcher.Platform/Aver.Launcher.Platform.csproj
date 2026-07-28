@@ -12,6 +12,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Aver.Launcher.Core\Aver.Launcher.Core.csproj" />
+    <!-- For IFileSystemOps: the interface is defined next to the applier that consumes it, and the
+         Windows implementation of it necessarily lives here with the rest of the interop. -->
+    <ProjectReference Include="..\Aver.Launcher.Updater\Aver.Launcher.Updater.csproj" />
   </ItemGroup>
 
 </Project>
