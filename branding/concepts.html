@@ -1,0 +1,140 @@
+<meta charset="utf-8">
+<style>
+  body { margin:0; background:#0E0E10; color:#ECECEF;
+         font-family:"Century Gothic",Poppins,"Segoe UI",sans-serif; padding:38px 44px; }
+  h1 { font-size:22px; font-weight:600; margin:0 0 4px; letter-spacing:.4px; }
+  .sub { color:#9A9AA4; font-size:13px; margin-bottom:30px; }
+  .row { display:flex; gap:26px; flex-wrap:wrap; }
+  .card { background:#1E1E22; border:1px solid #2E2E34; border-radius:8px; padding:22px; width:298px; }
+  .name { font-size:14px; font-weight:600; margin:16px 0 5px; }
+  .desc { color:#9A9AA4; font-size:12px; line-height:1.5; }
+  .tile { display:flex; align-items:center; gap:16px; }
+  .sizes { display:flex; align-items:flex-end; gap:12px; margin-top:16px;
+           padding-top:14px; border-top:1px solid #2E2E34; }
+  .cap { color:#6A6A74; font-size:10px; text-align:center; }
+</style>
+
+<h1>Aver Launcher &mdash; logo concepts</h1>
+<div class="sub">
+  Same family as the engine mark (isometric planes, #F26B21 on #161618) but a different SILHOUETTE,
+  so the two are told apart at 16&nbsp;px in the taskbar rather than only by colour.
+</div>
+
+<div class="row">
+
+  <!-- ============================================= 1. LAUNCH CHEVRON -->
+  <div class="card">
+    <div class="tile">
+      <svg width="96" height="96" viewBox="0 0 256 256">
+        <rect width="256" height="256" rx="56" fill="#161618"/>
+        <!-- Two stacked isometric chevrons. Reads as "launch" and as the A of Aver; the outline is a
+             triangle, which cannot be confused with the engine's square cube at small sizes. -->
+        <path d="M128 46 L214 96 L182 114 L128 82 L74 114 L42 96 Z" fill="#F26B21"/>
+        <path d="M128 116 L214 166 L182 184 L128 152 L74 184 L42 166 Z" fill="#F26B21" opacity=".55"/>
+      </svg>
+      <svg width="56" height="56" viewBox="0 0 256 256">
+        <rect width="256" height="256" rx="56" fill="#161618"/>
+        <path d="M128 46 L214 96 L182 114 L128 82 L74 114 L42 96 Z" fill="#F26B21"/>
+        <path d="M128 116 L214 166 L182 184 L128 152 L74 184 L42 166 Z" fill="#F26B21" opacity=".55"/>
+      </svg>
+    </div>
+    <div class="name">1 &middot; Launch chevron</div>
+    <div class="desc">
+      Two isometric chevrons rising. Triangular silhouette, so it never reads as the engine's cube.
+      The doubled form says "versions" and the upward motion says "launch". Strongest at 16&nbsp;px.
+    </div>
+    <div class="sizes">
+      <div><svg width="32" height="32" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#161618"/><path d="M128 46 L214 96 L182 114 L128 82 L74 114 L42 96 Z" fill="#F26B21"/><path d="M128 116 L214 166 L182 184 L128 152 L74 184 L42 166 Z" fill="#F26B21" opacity=".55"/></svg><div class="cap">32</div></div>
+      <div><svg width="24" height="24" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#161618"/><path d="M128 46 L214 96 L182 114 L128 82 L74 114 L42 96 Z" fill="#F26B21"/><path d="M128 116 L214 166 L182 184 L128 152 L74 184 L42 166 Z" fill="#F26B21" opacity=".55"/></svg><div class="cap">24</div></div>
+      <div><svg width="16" height="16" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#161618"/><path d="M128 46 L214 96 L182 114 L128 82 L74 114 L42 96 Z" fill="#F26B21"/><path d="M128 116 L214 166 L182 184 L128 152 L74 184 L42 166 Z" fill="#F26B21" opacity=".55"/></svg><div class="cap">16</div></div>
+    </div>
+  </div>
+
+  <!-- ============================================= 2. CUBE ON PAD -->
+  <div class="card">
+    <div class="tile">
+      <svg width="96" height="96" viewBox="0 0 256 256">
+        <rect width="256" height="256" rx="56" fill="#161618"/>
+        <!-- The engine's cube, lifted off a pad: the launcher HOLDS the engine rather than being it. -->
+        <ellipse cx="128" cy="196" rx="62" ry="15" fill="#F26B21" opacity=".18"/>
+        <path d="M128 52 L196 91 L128 130 L60 91 Z" fill="#F26B21"/>
+        <path d="M60 91 L128 130 L128 176 L60 137 Z" fill="#B4501A"/>
+        <path d="M196 91 L128 130 L128 176 L196 137 Z" fill="#8A3410"/>
+        <rect x="52" y="206" width="152" height="13" rx="6.5" fill="#F26B21"/>
+      </svg>
+      <svg width="56" height="56" viewBox="0 0 256 256">
+        <rect width="256" height="256" rx="56" fill="#161618"/>
+        <ellipse cx="128" cy="196" rx="62" ry="15" fill="#F26B21" opacity=".18"/>
+        <path d="M128 52 L196 91 L128 130 L60 91 Z" fill="#F26B21"/>
+        <path d="M60 91 L128 130 L128 176 L60 137 Z" fill="#B4501A"/>
+        <path d="M196 91 L128 130 L128 176 L196 137 Z" fill="#8A3410"/>
+        <rect x="52" y="206" width="152" height="13" rx="6.5" fill="#F26B21"/>
+      </svg>
+    </div>
+    <div class="name">2 &middot; Cube on a pad</div>
+    <div class="desc">
+      The engine's own cube, lifted clear of a launch bar. Says "this is the thing that holds your
+      engine" most literally &mdash; but it keeps the cube, so at 16&nbsp;px it is the closest of the
+      three to the engine icon.
+    </div>
+    <div class="sizes">
+      <div><svg width="32" height="32" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#161618"/><path d="M128 52 L196 91 L128 130 L60 91 Z" fill="#F26B21"/><path d="M60 91 L128 130 L128 176 L60 137 Z" fill="#B4501A"/><path d="M196 91 L128 130 L128 176 L196 137 Z" fill="#8A3410"/><rect x="52" y="206" width="152" height="13" rx="6.5" fill="#F26B21"/></svg><div class="cap">32</div></div>
+      <div><svg width="24" height="24" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#161618"/><path d="M128 52 L196 91 L128 130 L60 91 Z" fill="#F26B21"/><path d="M60 91 L128 130 L128 176 L60 137 Z" fill="#B4501A"/><path d="M196 91 L128 130 L128 176 L196 137 Z" fill="#8A3410"/><rect x="52" y="206" width="152" height="13" rx="6.5" fill="#F26B21"/></svg><div class="cap">24</div></div>
+      <div><svg width="16" height="16" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#161618"/><path d="M128 52 L196 91 L128 130 L60 91 Z" fill="#F26B21"/><path d="M60 91 L128 130 L128 176 L60 137 Z" fill="#B4501A"/><path d="M196 91 L128 130 L128 176 L196 137 Z" fill="#8A3410"/><rect x="52" y="206" width="152" height="13" rx="6.5" fill="#F26B21"/></svg><div class="cap">16</div></div>
+    </div>
+  </div>
+
+  <!-- ============================================= 3. VERSION STACK -->
+  <div class="card">
+    <div class="tile">
+      <svg width="96" height="96" viewBox="0 0 256 256">
+        <rect width="256" height="256" rx="56" fill="#161618"/>
+        <!-- Three isometric slabs; the top one lifted and full-strength = the active version. -->
+        <path d="M128 150 L200 189 L128 228 L56 189 Z" fill="#7A2E0E"/>
+        <path d="M128 112 L200 151 L128 190 L56 151 Z" fill="#B4501A"/>
+        <path d="M128 46 L200 85 L128 124 L56 85 Z" fill="#F26B21"/>
+      </svg>
+      <svg width="56" height="56" viewBox="0 0 256 256">
+        <rect width="256" height="256" rx="56" fill="#161618"/>
+        <path d="M128 150 L200 189 L128 228 L56 189 Z" fill="#7A2E0E"/>
+        <path d="M128 112 L200 151 L128 190 L56 151 Z" fill="#B4501A"/>
+        <path d="M128 46 L200 85 L128 124 L56 85 Z" fill="#F26B21"/>
+      </svg>
+    </div>
+    <div class="name">3 &middot; Version stack</div>
+    <div class="desc">
+      Three isometric slabs, the lifted one active. This is what the launcher actually IS &mdash; the
+      thing that holds several engine versions and picks one. Diamond silhouette, distinct from the
+      cube, and the gap survives downscaling.
+    </div>
+    <div class="sizes">
+      <div><svg width="32" height="32" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#161618"/><path d="M128 150 L200 189 L128 228 L56 189 Z" fill="#7A2E0E"/><path d="M128 112 L200 151 L128 190 L56 151 Z" fill="#B4501A"/><path d="M128 46 L200 85 L128 124 L56 85 Z" fill="#F26B21"/></svg><div class="cap">32</div></div>
+      <div><svg width="24" height="24" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#161618"/><path d="M128 150 L200 189 L128 228 L56 189 Z" fill="#7A2E0E"/><path d="M128 112 L200 151 L128 190 L56 151 Z" fill="#B4501A"/><path d="M128 46 L200 85 L128 124 L56 85 Z" fill="#F26B21"/></svg><div class="cap">24</div></div>
+      <div><svg width="16" height="16" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#161618"/><path d="M128 150 L200 189 L128 228 L56 189 Z" fill="#7A2E0E"/><path d="M128 112 L200 151 L128 190 L56 151 Z" fill="#B4501A"/><path d="M128 46 L200 85 L128 124 L56 85 Z" fill="#F26B21"/></svg><div class="cap">16</div></div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:34px; padding-top:22px; border-top:1px solid #2E2E34;">
+  <div style="font-size:13px; font-weight:600; margin-bottom:12px;">Beside the engine icon, at taskbar size</div>
+  <div style="display:flex; align-items:center; gap:22px;">
+    <div style="text-align:center">
+      <svg width="40" height="40" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#161618"/><path d="M128 52 L196 91 L128 130 L60 91 Z" fill="#F26B21"/><path d="M60 91 L128 130 L128 176 L60 137 Z" fill="#B4501A"/><path d="M196 91 L128 130 L128 176 L196 137 Z" fill="#8A3410"/></svg>
+      <div class="cap" style="margin-top:5px">engine</div>
+    </div>
+    <div style="color:#3E3E46">|</div>
+    <div style="text-align:center">
+      <svg width="40" height="40" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#161618"/><path d="M128 46 L214 96 L182 114 L128 82 L74 114 L42 96 Z" fill="#F26B21"/><path d="M128 116 L214 166 L182 184 L128 152 L74 184 L42 166 Z" fill="#F26B21" opacity=".55"/></svg>
+      <div class="cap" style="margin-top:5px">1</div>
+    </div>
+    <div style="text-align:center">
+      <svg width="40" height="40" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#161618"/><ellipse cx="128" cy="196" rx="62" ry="15" fill="#F26B21" opacity=".18"/><path d="M128 52 L196 91 L128 130 L60 91 Z" fill="#F26B21"/><path d="M60 91 L128 130 L128 176 L60 137 Z" fill="#B4501A"/><path d="M196 91 L128 130 L128 176 L196 137 Z" fill="#8A3410"/><rect x="52" y="206" width="152" height="13" rx="6.5" fill="#F26B21"/></svg>
+      <div class="cap" style="margin-top:5px">2</div>
+    </div>
+    <div style="text-align:center">
+      <svg width="40" height="40" viewBox="0 0 256 256"><rect width="256" height="256" rx="56" fill="#161618"/><path d="M128 150 L200 189 L128 228 L56 189 Z" fill="#7A2E0E"/><path d="M128 112 L200 151 L128 190 L56 151 Z" fill="#B4501A"/><path d="M128 46 L200 85 L128 124 L56 85 Z" fill="#F26B21"/></svg>
+      <div class="cap" style="margin-top:5px">3</div>
+    </div>
+  </div>
+</div>

@@ -191,7 +191,7 @@ public class EngineOptionsTests
         Assert.DoesNotContain("Physics", e.IncludedModules);
         var excluded = e.ExcludedModules.ToDictionary(x => x.Module, x => x.Consequence);
         Assert.Contains("Physics", excluded.Keys);
-        Assert.Contains("No collision", excluded["Physics"]);
+        Assert.Contains("Nothing collides", excluded["Physics"]);
         Assert.Contains("global illumination", excluded["Voxi renderer"]);
     }
 

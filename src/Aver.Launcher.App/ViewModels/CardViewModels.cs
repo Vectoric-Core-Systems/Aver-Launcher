@@ -86,14 +86,52 @@ public sealed class ProjectCardViewModel(ProjectEntry entry, IReadOnlyList<Engin
 
     public string StartMapText => Entry.Desc?.StartMap is { Length: > 0 } m ? m : "no start map";
 
+    private readonly EngineChoice _choice = entry.Resolve(installs);
+
     /// <summary>The install that will actually be used, or null when none qualifies.</summary>
-    public EngineInstall? Engine { get; } = entry.BestEngine(installs);
+    public EngineInstall? Engine => _choice.Install;
 
     public bool CanOpen => Engine is not null && Entry.Desc is not null;
 
+    /// <summary>True when the chosen engine has everything the project needs.</summary>
+    public bool FullySatisfied => _choice.FullySatisfied;
+
+    /// <summary>True when an engine was found but it is missing something the project uses.</summary>
+    public bool HasShortfall => Engine is not null && _choice.Missing.Count > 0;
+
     public string OpenWithText => Engine is null ? "no installed engine qualifies" : $"opens with {Engine.Label}";
 
-    /// <summary>Set when the project cannot be opened, explaining which of the two reasons applies.</summary>
+    /// <summary>
+    /// What the project needs, as chips, so the requirement is visible before anything goes wrong.
+    /// </summary>
+    public IReadOnlyList<ChipViewModel> Requires => Entry.Requirements.Evidence
+        .OrderBy(e => e.ModuleName, StringComparer.OrdinalIgnoreCase)
+        .Select(e => new ChipViewModel(e.ModuleName, e.Reason))
+        .ToList();
+
+    /// <summary>
+    /// The shortfall, named with its consequence.
+    /// </summary>
+    /// <remarks>
+    /// This is the message that would have saved the confusion: an edition without physics opens
+    /// SkyForge, renders the arena correctly, and then does nothing on Play. Nothing errors, so
+    /// without saying it here the user is left to work it out from a level that looks right.
+    /// </remarks>
+    public string? Shortfall
+    {
+        get
+        {
+            if (!HasShortfall) return null;
+            RequirementEvidence[] m = [.. _choice.Missing];
+            string names = string.Join(", ", m.Select(x => x.ModuleName));
+            string consequences = string.Join(" ",
+                m.Select(x => EngineOptions.Find(x.Module)?.Consequence).Where(c => c is not null));
+            return $"{Engine!.Edition.Id} is built without {names}. {consequences} "
+                   + $"({m[0].Reason})";
+        }
+    }
+
+    /// <summary>Set when the project cannot be opened at all.</summary>
     public string? Problem
     {
         get

@@ -1,5 +1,18 @@
 namespace Aver.Launcher.Core;
 
+/// <summary>
+/// The engine chosen for a project, and what it still cannot do.
+/// </summary>
+/// <param name="Install">Best available engine, or null when none can open the project at all.</param>
+/// <param name="Missing">
+/// Requirements this engine does not satisfy. Empty means the project will work fully. Non-empty
+/// means it will OPEN and then misbehave in a specific, nameable way.
+/// </param>
+public sealed record EngineChoice(EngineInstall? Install, IReadOnlyList<RequirementEvidence> Missing)
+{
+    public bool FullySatisfied => Install is not null && Missing.Count == 0;
+}
+
 /// <summary>A project the launcher can show and open.</summary>
 public sealed class ProjectEntry
 {
@@ -24,33 +37,58 @@ public sealed class ProjectEntry
     /// <summary>The engine floor the manifest declares, or empty when it declares none.</summary>
     public string EngineMinVersion => Desc?.EngineMinVersion ?? string.Empty;
 
+    /// <summary>
+    /// What this project needs, inferred from its scripts and content. Computed once and cached,
+    /// because it reads the whole Content tree.
+    /// </summary>
+    public ProjectRequirements Requirements => _requirements ??=
+        Desc is null ? new ProjectRequirements() : ProjectRequirements.Infer(Desc);
+
+    private ProjectRequirements? _requirements;
+
     /// <summary>Picks the engine that should open this project, or null when none qualifies.</summary>
     /// <remarks>
-    /// Newest version first, then the edition with the MOST optional modules.
+    /// Ordered by: satisfies the project's inferred requirements, then newest version, then most
+    /// modules, then id for determinism.
     /// <para>
-    /// The module tie-break is the part that matters. A fuller edition can do everything a leaner one
-    /// can, so preferring it is never wrong; preferring the leaner one silently opens a project in an
-    /// engine without physics or global illumination, and the author sees a world that behaves
-    /// differently for no stated reason. Sorting editions by name would decide this alphabetically --
-    /// "minimal" beating "standard" -- which is how that bug got in.
+    /// Capability comes FIRST, ahead of version, because a build that lacks physics does not fail --
+    /// it opens the project, renders the level, and then does nothing when Play is pressed. A newer
+    /// engine that silently breaks the game is worse than a slightly older one that runs it.
     /// </para>
     /// <para>
-    /// A manifest cannot yet say which modules it needs; <c>.ocproject</c> has no such key, and unknown
-    /// keys are ignored by design. Until it can, "most capable that satisfies the version floor" is the
-    /// only defensible default.
+    /// The module tie-break still matters below that: a fuller edition does everything a leaner one
+    /// can, so preferring it is never wrong. Sorting by edition NAME would decide this alphabetically,
+    /// with "minimal" beating "standard" -- which is exactly how that bug got in.
     /// </para>
     /// </remarks>
     public EngineInstall? BestEngine(IEnumerable<EngineInstall> installs)
+        => Resolve(installs).Install;
+
+    /// <summary>
+    /// Picks an engine and reports what it still cannot do.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately returns a best-effort install even when nothing satisfies the project fully. The
+    /// user may well want to open it anyway -- to look at the level, or to edit content that does not
+    /// need the missing module -- so the launcher states the consequence and lets them decide, rather
+    /// than refusing and leaving them with a disabled button and no explanation.
+    /// </remarks>
+    public EngineChoice Resolve(IEnumerable<EngineInstall> installs)
     {
         ArgumentNullException.ThrowIfNull(installs);
-        if (Desc is null) return null;
+        if (Desc is null) return new EngineChoice(null, []);
 
-        return installs
+        ProjectRequirements req = Requirements;
+
+        EngineInstall? best = installs
             .Where(i => i.IsUsable && i.Edition.CanEditProjects && i.CanOpen(Desc))
-            .OrderByDescending(i => i.Version, Comparer<string>.Create(AverVersion.Compare))
+            .OrderByDescending(i => req.SatisfiedBy(i.Edition))
+            .ThenByDescending(i => i.Version, Comparer<string>.Create(AverVersion.Compare))
             .ThenByDescending(i => i.Edition.IncludedModules.Count)
             .ThenBy(i => i.Edition.Id, StringComparer.OrdinalIgnoreCase)
             .FirstOrDefault();
+
+        return new EngineChoice(best, best is null ? [] : req.MissingIn(best.Edition));
     }
 }
 

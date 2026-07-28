@@ -28,7 +28,14 @@ public enum EngineOptionKind
 /// Keys that must also be ON. The engine enforces these by silently forcing this option OFF, so the
 /// launcher replicates them to explain the flip rather than let the user discover it in a build log.
 /// </param>
-/// <param name="Consequence">What is lost when this is OFF, for the UI to show beside the checkbox.</param>
+/// <param name="Consequence">
+/// What is lost AT RUNTIME when this is OFF. Kept strictly to observable behaviour, because this
+/// string is shown to someone being told their project will misbehave -- build-side trivia there is
+/// noise at the moment they least want it.
+/// </param>
+/// <param name="BuildNote">
+/// Why someone might choose to leave it off, for the edition picker. Never shown in a warning.
+/// </param>
 public sealed record EngineOption(
     string Key,
     string DisplayName,
@@ -36,7 +43,8 @@ public sealed record EngineOption(
     bool DefaultOn,
     EngineOptionKind Kind,
     string[] Requires,
-    string Consequence);
+    string Consequence,
+    string? BuildNote = null);
 
 /// <summary>A single change the resolver made to a requested option set, and why.</summary>
 public sealed record OptionAdjustment(string Key, bool Requested, bool Effective, string Reason);
@@ -142,7 +150,8 @@ public static class EngineOptions
         new(Physics, "Physics",
             "Jolt Physics: rigid bodies, character controller, queries and contact events.",
             DefaultOn: true, EngineOptionKind.Module, [],
-            "No collision, gravity or character movement. Saves compiling 153 translation units."),
+            "Nothing collides or falls, and characters cannot move.",
+            BuildNote: "Leaving it out saves compiling 153 translation units."),
 
         new(RhiD3D12, "Direct3D 12",
             "The primary render backend.",

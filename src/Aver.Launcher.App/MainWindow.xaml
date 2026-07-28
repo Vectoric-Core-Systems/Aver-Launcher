@@ -132,9 +132,29 @@
                             <TextBlock Style="{StaticResource Dim}" Text="  ·  " />
                             <TextBlock Style="{StaticResource Dim}" Text="{Binding StartMapText}" />
                         </StackPanel>
-                        <TextBlock Style="{StaticResource Dim}" Text="{Binding OpenWithText}" Margin="0,3,0,0"
+                        <!-- What the project needs, inferred from its scripts and content. Shown
+                             always, so the requirement is visible before anything goes wrong. -->
+                        <ItemsControl ItemsSource="{Binding Requires}" Margin="0,7,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource ChipOff}" ToolTip="{Binding Tooltip}">
+                                        <TextBlock Text="{Binding Text}" FontSize="11"
+                                                   Foreground="{StaticResource TextDim}"
+                                                   FontFamily="{StaticResource UiFont}" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Style="{StaticResource Dim}" Text="{Binding OpenWithText}" Margin="0,2,0,0"
                                    Foreground="{StaticResource Ok}"
-                                   Visibility="{Binding CanOpen, Converter={StaticResource Bool2Vis}}" />
+                                   Visibility="{Binding FullySatisfied, Converter={StaticResource Bool2Vis}}" />
+                        <TextBlock Style="{StaticResource Body}" Text="{Binding Shortfall}" TextWrapping="Wrap"
+                                   Foreground="{StaticResource Warn}" FontSize="12" Margin="0,3,0,0"
+                                   Visibility="{Binding HasShortfall, Converter={StaticResource Bool2Vis}}" />
                         <TextBlock Style="{StaticResource Body}" Text="{Binding Problem}" TextWrapping="Wrap"
                                    Foreground="{StaticResource Warn}" FontSize="12" Margin="0,3,0,0"
                                    Visibility="{Binding Problem, Converter={StaticResource NullToVis}}" />
