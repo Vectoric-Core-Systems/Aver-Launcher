@@ -1,6 +1,8 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Aver.Launcher.Cli/Aver.Launcher.Cli.csproj" />
     <Project Path="src/Aver.Launcher.Core/Aver.Launcher.Core.csproj" />
+    <Project Path="src/Aver.Launcher.Platform/Aver.Launcher.Platform.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Aver.Launcher.Tests/Aver.Launcher.Tests.csproj" />

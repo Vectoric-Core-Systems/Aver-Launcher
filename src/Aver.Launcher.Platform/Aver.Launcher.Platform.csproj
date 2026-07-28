@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Every P/Invoke in the launcher lives here, and nowhere else. Keeping the native surface in one
+    project is what lets an architecture test assert that the WPF app contains no interop at all.
+    A UI thread that can fault inside a graphics driver is a UI thread that cannot report the fault.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Aver.Launcher.Core\Aver.Launcher.Core.csproj" />
+  </ItemGroup>
+
+</Project>

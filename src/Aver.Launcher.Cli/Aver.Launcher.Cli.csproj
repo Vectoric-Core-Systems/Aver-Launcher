@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Console host for everything the launcher can do headlessly: the prerequisite probe now, and the
+    publisher verbs later. It exists for two reasons beyond convenience.
+    1. Every phase gate has to be one re-runnable command with a meaningful exit code, and a WinExe
+       cannot write to a parent console without AttachConsole gymnastics.
+    2. The GPU probe must run in a CHILD process. A launcher that faults inside a graphics driver
+       while probing is a launcher that cannot report the fault, and probing is exactly where a bad
+       driver misbehaves. The WPF app will spawn this rather than probe in-process.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>averlauncher-cli</AssemblyName>
+    <RollForward>LatestMinor</RollForward>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Aver.Launcher.Core\Aver.Launcher.Core.csproj" />
+    <ProjectReference Include="..\Aver.Launcher.Platform\Aver.Launcher.Platform.csproj" />
+  </ItemGroup>
+
+</Project>
