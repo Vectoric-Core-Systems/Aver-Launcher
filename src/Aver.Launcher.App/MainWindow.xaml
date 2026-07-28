@@ -1,0 +1,375 @@
+<Window x:Class="Aver.Launcher.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Aver.Launcher.App.ViewModels"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="Aver Launcher" Height="760" Width="1180" MinHeight="560" MinWidth="940"
+        Background="{StaticResource Bg}" WindowStartupLocation="CenterScreen"
+        TextOptions.TextFormattingMode="Ideal" UseLayoutRounding="True"
+        WindowStyle="None" ResizeMode="CanResize">
+
+    <shell:WindowChrome.WindowChrome>
+        <!-- CaptionHeight matches the title bar row so dragging works there and nowhere else. -->
+        <shell:WindowChrome CaptionHeight="46" ResizeBorderThickness="6"
+                            CornerRadius="0" GlassFrameThickness="0" UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="Bool2Vis" />
+
+        <!-- ==================================================== engine slot card -->
+        <DataTemplate x:Key="EngineCard" DataType="{x:Type vm:EngineCardViewModel}">
+            <Border Style="{StaticResource Card}" Width="330" Margin="0,0,16,16">
+                <StackPanel>
+                    <!-- Orange header band: the version is the identity of an engine slot. -->
+                    <Border CornerRadius="3,3,0,0" Height="86">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#FFF26B21" Offset="0" />
+                                <GradientStop Color="#FF8A3410" Offset="1" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Grid Margin="18,0">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Version}" FontSize="30" Foreground="White"
+                                           FontFamily="{StaticResource UiFontMedium}" />
+                                <TextBlock Text="{Binding EditionName}" FontSize="11" Foreground="#DDFFFFFF"
+                                           FontFamily="{StaticResource UiFontMedium}" Margin="0,-2,0,0" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding SizeText}" Foreground="#CCFFFFFF" FontSize="12"
+                                       HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,14,0,0"
+                                       FontFamily="{StaticResource UiFont}" />
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Margin="18,14,18,16">
+                        <TextBlock Style="{StaticResource H2}" Text="MODULES" Margin="0,0,0,7" />
+                        <ItemsControl ItemsSource="{Binding Included}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource Chip}">
+                                        <TextBlock Text="{Binding}" FontSize="11" Foreground="{StaticResource Accent}"
+                                                   FontFamily="{StaticResource UiFont}" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <ItemsControl ItemsSource="{Binding Excluded}" Margin="0,2,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <!-- Excluded modules are shown, not omitted: the tooltip is what the
+                                         edition gave up, which is the thing a user is choosing between. -->
+                                    <Border Style="{StaticResource ChipOff}" ToolTip="{Binding Tooltip}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="8"
+                                                       Foreground="{StaticResource TextFaint}"
+                                                       VerticalAlignment="Center" Margin="0,0,5,0" />
+                                            <TextBlock Text="{Binding Text}" FontSize="11"
+                                                       Foreground="{StaticResource TextFaint}"
+                                                       FontFamily="{StaticResource UiFont}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Style="{StaticResource Mono}" Text="{Binding Root}" Margin="0,8,0,0"
+                                   TextTrimming="CharacterEllipsis" ToolTip="{Binding Root}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                            <TextBlock Style="{StaticResource Mono}" Text="{Binding BackendText}" />
+                            <TextBlock Style="{StaticResource Mono}" Text="  |  " />
+                            <TextBlock Style="{StaticResource Mono}" Text="{Binding ProvenanceText}" />
+                        </StackPanel>
+
+                        <TextBlock Style="{StaticResource Body}" Text="{Binding Problem}" Foreground="{StaticResource Warn}"
+                                   TextWrapping="Wrap" Margin="0,8,0,0" FontSize="12"
+                                   Visibility="{Binding Problem, Converter={StaticResource NullToVis}}" />
+
+                        <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                            <Button Content="LAUNCH" Style="{StaticResource AccentButton}"
+                                    Command="{Binding DataContext.Launch, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}" />
+                            <Button Content="Folder" Style="{StaticResource GhostButton}" Margin="8,0,0,0"
+                                    Padding="14,9"
+                                    Command="{Binding DataContext.Reveal, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding Root}" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- ==================================================== project card -->
+        <DataTemplate x:Key="ProjectCard" DataType="{x:Type vm:ProjectCardViewModel}">
+            <Border Style="{StaticResource Card}" Margin="0,0,0,10" Padding="18,14">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Name}" FontSize="16" Foreground="{StaticResource Text}"
+                                       FontFamily="{StaticResource UiFontMedium}" />
+                            <Border Style="{StaticResource Chip}" Margin="10,1,0,0"
+                                    Visibility="{Binding IsRecent, Converter={StaticResource Bool2Vis}}">
+                                <TextBlock Text="RECENT" FontSize="9" Foreground="{StaticResource Accent}"
+                                           FontFamily="{StaticResource UiFontMedium}" />
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Mono}" Text="{Binding Directory}" Margin="0,4,0,0"
+                                   TextTrimming="CharacterEllipsis" ToolTip="{Binding Directory}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <TextBlock Style="{StaticResource Dim}" Text="{Binding EngineText}" />
+                            <TextBlock Style="{StaticResource Dim}" Text="  ·  " />
+                            <TextBlock Style="{StaticResource Dim}" Text="{Binding StartMapText}" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Dim}" Text="{Binding OpenWithText}" Margin="0,3,0,0"
+                                   Foreground="{StaticResource Ok}"
+                                   Visibility="{Binding CanOpen, Converter={StaticResource Bool2Vis}}" />
+                        <TextBlock Style="{StaticResource Body}" Text="{Binding Problem}" TextWrapping="Wrap"
+                                   Foreground="{StaticResource Warn}" FontSize="12" Margin="0,3,0,0"
+                                   Visibility="{Binding Problem, Converter={StaticResource NullToVis}}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="Folder" Style="{StaticResource GhostButton}" Padding="14,9"
+                                Command="{Binding DataContext.Reveal, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding Entry.ManifestPath}" />
+                        <Button Content="OPEN" Style="{StaticResource AccentButton}" Margin="8,0,0,0"
+                                Command="{Binding DataContext.OpenProject, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- ==================================================== prerequisite row -->
+        <DataTemplate x:Key="PrereqRow" DataType="{x:Type vm:PrereqRowViewModel}">
+            <Border Style="{StaticResource Card}" Margin="0,0,0,8" Padding="16,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="86" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" CornerRadius="3" Padding="0,3" Height="22" VerticalAlignment="Top"
+                            Background="{Binding StatusBrushKey, Converter={StaticResource KeyToBrush}}">
+                        <TextBlock Text="{Binding StatusText}" FontSize="10" Foreground="#FF101014"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   FontFamily="{StaticResource UiFontMedium}" />
+                    </Border>
+
+                    <StackPanel Grid.Column="1" Margin="14,0,12,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Name}" FontSize="14" Foreground="{StaticResource Text}"
+                                       FontFamily="{StaticResource UiFontMedium}" />
+                            <TextBlock Style="{StaticResource Dim}" Text="{Binding Detail}" Margin="10,2,0,0" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Dim}" Text="{Binding Consequence}" TextWrapping="Wrap"
+                                   Margin="0,4,0,0"
+                                   Visibility="{Binding HasConsequence, Converter={StaticResource Bool2Vis}}" />
+                    </StackPanel>
+
+                    <Button Grid.Column="2" Content="Get it" Style="{StaticResource GhostButton}" Padding="14,7"
+                            VerticalAlignment="Top"
+                            Visibility="{Binding HasFix, Converter={StaticResource Bool2Vis}}"
+                            Command="{Binding DataContext.OpenUrl, RelativeSource={RelativeSource AncestorType=Window}}"
+                            CommandParameter="{Binding FixUrl}" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Border BorderBrush="{StaticResource Divider}" BorderThickness="1">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="228" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ============================================ left rail -->
+            <Border Grid.Column="0" Background="{StaticResource BgRail}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="22,26,0,26">
+                        <Image Source="Assets/logo.png" Width="34" Height="34" />
+                        <StackPanel VerticalAlignment="Center" Margin="11,0,0,0">
+                            <TextBlock Text="AVER" FontSize="17" Foreground="{StaticResource Text}"
+                                       FontFamily="{StaticResource UiFontMedium}" />
+                            <TextBlock Text="LAUNCHER" FontSize="9" Foreground="{StaticResource Accent}"
+                                       FontFamily="{StaticResource UiFontMedium}" Margin="0,-3,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1">
+                        <RadioButton Style="{StaticResource NavItem}" Content="Engine Versions" GroupName="nav"
+                                     IsChecked="{Binding IsEngines, Mode=OneWay}"
+                                     Command="{Binding Go}" CommandParameter="{x:Static vm:Page.Engines}" />
+                        <RadioButton Style="{StaticResource NavItem}" Content="Projects" GroupName="nav"
+                                     IsChecked="{Binding IsProjects, Mode=OneWay}"
+                                     Command="{Binding Go}" CommandParameter="{x:Static vm:Page.Projects}" />
+                        <RadioButton Style="{StaticResource NavItem}" Content="System" GroupName="nav"
+                                     IsChecked="{Binding IsSystem, Mode=OneWay}"
+                                     Command="{Binding Go}" CommandParameter="{x:Static vm:Page.System}" />
+                        <RadioButton Style="{StaticResource NavItem}" Content="Settings" GroupName="nav"
+                                     IsChecked="{Binding IsSettings, Mode=OneWay}"
+                                     Command="{Binding Go}" CommandParameter="{x:Static vm:Page.Settings}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="3" Margin="26,0,20,22">
+                        <TextBlock Style="{StaticResource Dim}" Text="{Binding AdapterText}" TextWrapping="Wrap"
+                                   FontSize="11" />
+                        <TextBlock Style="{StaticResource Dim}" Text="{Binding OsText}" FontSize="11" Margin="0,2,0,0" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ============================================ content -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="46" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- title bar: draggable via WindowChrome, buttons opt back out of the chrome -->
+                <Grid Grid.Row="0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Style="{StaticResource CaptionButton}" Content="&#xE921;" Click="OnMinimise" />
+                        <Button Style="{StaticResource CaptionButton}" Content="&#xE922;" Click="OnMaximise" />
+                        <Button Style="{StaticResource CloseButton}" Content="&#xE8BB;" Click="OnClose" />
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel Grid.Row="1" Margin="34,4,34,20">
+                    <Grid>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource H1}" Text="{Binding PageTitle}" />
+                            <TextBlock Style="{StaticResource Dim}" Text="{Binding PageSubtitle}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <Button Content="Refresh" Style="{StaticResource GhostButton}" Padding="16,8"
+                                HorizontalAlignment="Right" VerticalAlignment="Top"
+                                Command="{Binding Refresh}" IsEnabled="{Binding Busy, Converter={StaticResource Not}}" />
+                    </Grid>
+                </StackPanel>
+
+                <!-- ============================ ENGINES -->
+                <ScrollViewer Grid.Row="2" Style="{StaticResource ScrollHost}" Margin="34,0,26,0"
+                              Visibility="{Binding IsEngines, Converter={StaticResource Bool2Vis}}">
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding Engines}" ItemTemplate="{StaticResource EngineCard}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+
+                        <Border Style="{StaticResource Card}" Padding="26" Margin="0,0,16,0"
+                                Visibility="{Binding Engines.Count, Converter={StaticResource ZeroToVis}}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource H1}" FontSize="16" Text="No engines installed" />
+                                <TextBlock Style="{StaticResource Dim}" Text="{Binding EnginesEmptyText}"
+                                           TextWrapping="Wrap" Margin="0,10,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ============================ PROJECTS -->
+                <ScrollViewer Grid.Row="2" Style="{StaticResource ScrollHost}" Margin="34,0,26,0"
+                              Visibility="{Binding IsProjects, Converter={StaticResource Bool2Vis}}">
+                    <ItemsControl ItemsSource="{Binding Projects}" ItemTemplate="{StaticResource ProjectCard}" />
+                </ScrollViewer>
+
+                <!-- ============================ SYSTEM -->
+                <ScrollViewer Grid.Row="2" Style="{StaticResource ScrollHost}" Margin="34,0,26,0"
+                              Visibility="{Binding IsSystem, Converter={StaticResource Bool2Vis}}">
+                    <StackPanel>
+                        <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,14"
+                                Visibility="{Binding HasReport, Converter={StaticResource Bool2Vis}}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding VerdictTitle}" FontSize="18"
+                                           FontFamily="{StaticResource UiFontMedium}"
+                                           Foreground="{Binding CanRunEngine, Converter={StaticResource VerdictBrush}}" />
+                                <TextBlock Style="{StaticResource Dim}" Text="{Binding VerdictDetail}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,14"
+                                Visibility="{Binding HasProbeError, Converter={StaticResource Bool2Vis}}">
+                            <StackPanel>
+                                <TextBlock Text="Hardware probe failed" FontSize="15"
+                                           Foreground="{StaticResource Fail}"
+                                           FontFamily="{StaticResource UiFontMedium}" />
+                                <TextBlock Style="{StaticResource Dim}" Text="{Binding ProbeError}"
+                                           TextWrapping="Wrap" Margin="0,5,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <ItemsControl ItemsSource="{Binding Prereqs}" ItemTemplate="{StaticResource PrereqRow}" />
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ============================ SETTINGS -->
+                <ScrollViewer Grid.Row="2" Style="{StaticResource ScrollHost}" Margin="34,0,26,0"
+                              Visibility="{Binding IsSettings, Converter={StaticResource Bool2Vis}}">
+                    <StackPanel>
+                        <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource H2}" Text="ENGINE INSTALL ROOT" />
+                                <TextBlock Style="{StaticResource Body}" Text="{Binding InstallRoot}" Margin="0,5,0,0"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Style="{StaticResource Dim}" Margin="0,6,0,0" TextWrapping="Wrap"
+                                           Text="Per-user, so installing needs no elevation. Each version lives in its own directory and is never modified in place." />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource H2}" Text="PROJECTS ROOT" />
+                                <TextBlock Style="{StaticResource Body}" Text="{Binding ProjectsRoot}" Margin="0,5,0,0"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource H2}" Text="EDITOR RECENT LIST" />
+                                <TextBlock Style="{StaticResource Body}" Text="{Binding RecentsFile}" Margin="0,5,0,0"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Style="{StaticResource Dim}" Margin="0,6,0,0" TextWrapping="Wrap"
+                                           Text="Read only. The editor rewrites this file wholesale with no locking, so a second writer would lose entries." />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- status strip -->
+                <Border Grid.Row="3" Background="{StaticResource BgRail}" BorderBrush="{StaticResource Divider}"
+                        BorderThickness="0,1,0,0" Height="30">
+                    <Grid Margin="34,0,20,0">
+                        <TextBlock Style="{StaticResource Dim}" Text="{Binding Status}" VerticalAlignment="Center"
+                                   FontSize="11" />
+                        <TextBlock Style="{StaticResource Dim}" Text="downloading is not implemented yet"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11"
+                                   Foreground="{StaticResource TextFaint}" />
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

@@ -87,11 +87,14 @@ public sealed class DotnetInfo
 {
     public string? Root { get; set; }
 
+    // Settable, not get-only: the report crosses a process boundary as JSON (the probe runs in a
+    // child process), and System.Text.Json cannot populate a read-only collection property.
+
     /// <summary>Versions under <c>shared\Microsoft.NETCore.App</c>.</summary>
-    public List<string> Runtimes { get; } = [];
+    public List<string> Runtimes { get; set; } = [];
 
     /// <summary>Versions under <c>sdk</c>.</summary>
-    public List<string> Sdks { get; } = [];
+    public List<string> Sdks { get; set; } = [];
 }
 
 /// <summary>Visual C++ redistributable, as the registry and the loader report it.</summary>
@@ -104,7 +107,7 @@ public sealed class VcRedistInfo
     public string Version { get; set; } = string.Empty;
 
     /// <summary>Runtime DLLs that actually loaded, which beats registry state.</summary>
-    public List<string> LoadableDlls { get; } = [];
+    public List<string> LoadableDlls { get; set; } = [];
 }
 
 /// <summary>
