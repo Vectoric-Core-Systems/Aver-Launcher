@@ -111,6 +111,16 @@ public sealed class FeedClient
     public bool NotModified { get; private set; }
 
     /// <summary>
+    /// The ETag to send and the one last received. Seeded from persisted state at startup, so the
+    /// first poll after a restart can still be a 304 rather than a full download of the index.
+    /// </summary>
+    public string? ETag
+    {
+        get => _etag;
+        set => _etag = value;
+    }
+
+    /// <summary>
     /// Fetches the index, using <c>If-None-Match</c> so an unchanged poll costs a 304 with no body.
     /// Returns null when unchanged.
     /// </summary>

@@ -131,6 +131,61 @@ public static class InstallMaintenance
         }
     }
 
+    /// <summary>
+    /// Removes older versions of one edition, keeping the newest <paramref name="keep"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the "wipe the replaced ones" half of updating, and it is deliberately NOT part of the
+    /// install: the new version is installed and verified first, and only then is anything removed.
+    /// Removing first would turn a failed download into no working engine at all.
+    /// </para>
+    /// <para>
+    /// Never touches the version passed as <paramref name="protect"/>, whatever the count says, so a
+    /// keep-1 setting cannot delete the thing that was just installed. Returns what it removed
+    /// because a deletion the user did not ask for individually must at least be reported.
+    /// </para>
+    /// </remarks>
+    public static IReadOnlyList<string> PruneOldVersions(
+        IEnumerable<EngineInstall> installs, string edition, int keep, string? protect,
+        IFileSystemOps ops, Action<string>? onRemoved = null)
+    {
+        ArgumentNullException.ThrowIfNull(installs);
+        ArgumentNullException.ThrowIfNull(ops);
+        if (keep < 1) keep = 1;
+
+        List<EngineInstall> ofEdition = [.. installs
+            .Where(i => string.Equals(i.Edition.Id, edition, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(i => i.Version, Comparer<string>.Create(AverVersion.Compare))];
+
+        var removed = new List<string>();
+        int kept = 0;
+        foreach (EngineInstall i in ofEdition)
+        {
+            bool isProtected = protect is not null
+                               && string.Equals(i.Version, protect, StringComparison.OrdinalIgnoreCase);
+
+            if (isProtected || kept < keep)
+            {
+                kept++;
+                continue;
+            }
+
+            try
+            {
+                Uninstall(i, ops);
+                removed.Add(i.Label);
+                onRemoved?.Invoke(i.Label);
+            }
+            catch (IOException)
+            {
+                // In use. Left alone rather than half-removed; the next prune will get it.
+            }
+        }
+
+        return removed;
+    }
+
     /// <summary>Deletes leftovers from interrupted installs and removals under a root.</summary>
     public static int SweepLeftovers(string installRoot)
     {

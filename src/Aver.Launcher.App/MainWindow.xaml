@@ -42,45 +42,12 @@
                         </Grid>
                     </Border>
 
+                    <!-- Deliberately short. The module list moved into the Options popup, so a card
+                         is identity plus actions and a wall of cards stays scannable. -->
                     <StackPanel Margin="18,14,18,16">
-                        <TextBlock Style="{StaticResource H2}" Text="MODULES" Margin="0,0,0,7" />
-                        <ItemsControl ItemsSource="{Binding Included}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Style="{StaticResource Chip}">
-                                        <TextBlock Text="{Binding}" FontSize="11" Foreground="{StaticResource Accent}"
-                                                   FontFamily="{StaticResource UiFont}" />
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <ItemsControl ItemsSource="{Binding Excluded}" Margin="0,2,0,0">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <!-- Excluded modules are shown, not omitted: the tooltip is what the
-                                         edition gave up, which is the thing a user is choosing between. -->
-                                    <Border Style="{StaticResource ChipOff}" ToolTip="{Binding Tooltip}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="8"
-                                                       Foreground="{StaticResource TextFaint}"
-                                                       VerticalAlignment="Center" Margin="0,0,5,0" />
-                                            <TextBlock Text="{Binding Text}" FontSize="11"
-                                                       Foreground="{StaticResource TextFaint}"
-                                                       FontFamily="{StaticResource UiFont}" />
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <TextBlock Style="{StaticResource Mono}" Text="{Binding Root}" Margin="0,8,0,0"
+                        <TextBlock Style="{StaticResource Dim}" Text="{Binding ModuleSummary}"
+                                   TextTrimming="CharacterEllipsis" ToolTip="{Binding ModuleSummary}" />
+                        <TextBlock Style="{StaticResource Mono}" Text="{Binding Root}" Margin="0,6,0,0"
                                    TextTrimming="CharacterEllipsis" ToolTip="{Binding Root}" />
                         <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
                             <TextBlock Style="{StaticResource Mono}" Text="{Binding BackendText}" />
@@ -92,42 +59,78 @@
                                    TextWrapping="Wrap" Margin="0,8,0,0" FontSize="12"
                                    Visibility="{Binding Problem, Converter={StaticResource NullToVis}}" />
 
+                        <!-- Offered only when the feed has something newer for this edition. -->
+                        <Button Style="{StaticResource AccentButton}" Content="{Binding UpdateText}"
+                                HorizontalAlignment="Stretch" Margin="0,12,0,0" Padding="12,9"
+                                Visibility="{Binding HasUpdate, Converter={StaticResource Bool2Vis}}"
+                                Command="{Binding DataContext.UpdateEngine, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}" />
+
                         <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
                             <Button Content="LAUNCH" Style="{StaticResource AccentButton}"
                                     Command="{Binding DataContext.Launch, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding}" />
 
-                            <!-- Options, permanently beside Launch, as Epic's engine slots have.
-                                 A ToggleButton driving a Popup rather than a ContextMenu, so it opens
-                                 on left-click where the user is already aiming. -->
+                            <!-- Options sits BETWEEN Launch and Folder. Clicking it opens a compact,
+                                 scrollable module selector rather than a menu: the modules are the
+                                 thing you actually want to see about an installed build. -->
                             <Grid Margin="8,0,0,0">
                                 <ToggleButton x:Name="OptToggle" Style="{StaticResource ComboToggle}"
-                                              Height="36" MinWidth="104" Cursor="Hand">
+                                              Height="36" MinWidth="96" Cursor="Hand">
                                     <TextBlock Text="Options" Foreground="{StaticResource Text}"
                                                FontFamily="{StaticResource UiFontMedium}" FontSize="13" />
                                 </ToggleButton>
                                 <Popup IsOpen="{Binding IsChecked, ElementName=OptToggle, Mode=TwoWay}"
                                        StaysOpen="False" Placement="Bottom" AllowsTransparency="True"
-                                       PopupAnimation="Fade" HorizontalOffset="0" VerticalOffset="3">
+                                       PopupAnimation="Fade" VerticalOffset="3">
                                     <Border Background="{StaticResource BgPanel}" CornerRadius="4"
                                             BorderBrush="{StaticResource Divider}" BorderThickness="1"
-                                            MinWidth="228" Padding="5">
+                                            Width="304" Padding="12">
                                         <StackPanel>
-                                            <Button Style="{StaticResource MenuItemButton}"
-                                                    Content="Modify installation..."
-                                                    ToolTip="Choose modules. Resolves to a published edition."
-                                                    Command="{Binding DataContext.ModifyInstall, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            <TextBlock Style="{StaticResource H2}" Text="MODULES" />
+
+                                            <!-- Bounded and scrollable: a popup that grows with the
+                                                 module count would eventually run off the screen. -->
+                                            <ScrollViewer MaxHeight="196" VerticalScrollBarVisibility="Auto"
+                                                          Margin="0,8,0,0"
+                                                          Visibility="{Binding HasModuleOptions, Converter={StaticResource Bool2Vis}}">
+                                                <ItemsControl ItemsSource="{Binding ModuleOptions.Modules}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <CheckBox IsChecked="{Binding IsOn, Mode=TwoWay}"
+                                                                      IsEnabled="{Binding Unavailable, Converter={StaticResource Not}}"
+                                                                      Content="{Binding Name}"
+                                                                      ToolTip="{Binding Consequence}"
+                                                                      Foreground="{StaticResource Text}"
+                                                                      FontFamily="{StaticResource UiFont}"
+                                                                      FontSize="12.5" Margin="0,0,0,7" />
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </ScrollViewer>
+
+                                            <TextBlock Style="{StaticResource Dim}" FontSize="11" TextWrapping="Wrap"
+                                                       Margin="0,4,0,0" Text="{Binding ModuleOptions.Resolution}"
+                                                       Visibility="{Binding HasModuleOptions, Converter={StaticResource Bool2Vis}}" />
+
+                                            <TextBlock Style="{StaticResource Dim}" FontSize="11" TextWrapping="Wrap"
+                                                       Text="Connect to a feed to change modules."
+                                                       Visibility="{Binding HasModuleOptions, Converter={StaticResource NotToVis}}" />
+
+                                            <Button Style="{StaticResource AccentButton}" Padding="12,8"
+                                                    Margin="0,10,0,0" HorizontalAlignment="Stretch"
+                                                    Content="{Binding ModuleOptions.ApplyLabel}"
+                                                    IsEnabled="{Binding ModuleOptions.WouldChange}"
+                                                    Visibility="{Binding HasModuleOptions, Converter={StaticResource Bool2Vis}}"
+                                                    Command="{Binding DataContext.ApplyModules, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}" />
-                                            <Button Style="{StaticResource MenuItemButton}"
-                                                    Content="Verify files"
+
+                                            <Border Height="1" Background="{StaticResource Divider}" Margin="0,10,0,6" />
+
+                                            <Button Style="{StaticResource MenuItemButton}" Content="Verify files"
                                                     ToolTip="Re-hash every file against what was recorded at install."
                                                     Command="{Binding DataContext.VerifyFiles, RelativeSource={RelativeSource AncestorType=Window}}"
                                                     CommandParameter="{Binding}" />
-                                            <Button Style="{StaticResource MenuItemButton}"
-                                                    Content="Show in Explorer"
-                                                    Command="{Binding DataContext.Reveal, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                    CommandParameter="{Binding Root}" />
-                                            <Border Height="1" Background="{StaticResource Divider}" Margin="6,5" />
                                             <Button Style="{StaticResource MenuItemButton}"
                                                     Content="Remove this version"
                                                     Foreground="{StaticResource Fail}"
@@ -137,6 +140,11 @@
                                     </Border>
                                 </Popup>
                             </Grid>
+
+                            <Button Content="Folder" Style="{StaticResource GhostButton}" Margin="8,0,0,0"
+                                    Padding="14,9"
+                                    Command="{Binding DataContext.Reveal, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding Root}" />
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
@@ -320,7 +328,11 @@
                         <StackPanel Orientation="Horizontal">
                             <StackPanel>
                                 <TextBlock Style="{StaticResource H1}" Text="{Binding PageTitle}" />
-                                <TextBlock Style="{StaticResource Dim}" Text="{Binding PageSubtitle}" Margin="0,3,0,0" />
+                                <TextBlock Style="{StaticResource Dim}" Text="{Binding PageSubtitle}" Margin="0,3,0,0"
+                                           Visibility="{Binding HasUpdates, Converter={StaticResource NotToVis}}" />
+                                <TextBlock Style="{StaticResource Dim}" Text="{Binding UpdateSummary}" Margin="0,3,0,0"
+                                           Foreground="{StaticResource Accent}"
+                                           Visibility="{Binding HasUpdates, Converter={StaticResource Bool2Vis}}" />
                             </StackPanel>
                             <!-- Adds an engine slot on the newest version, as Epic's engine tab does.
                                  Disabled, with the reason in its tooltip, when the feed offers nothing. -->

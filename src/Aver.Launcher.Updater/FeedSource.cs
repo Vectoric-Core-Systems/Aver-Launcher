@@ -58,6 +58,16 @@ public sealed class FeedSource
     public string Location { get; private init; } = string.Empty;
 
     /// <summary>
+    /// The conditional-request tag, round-tripped through persisted state. Null for a local feed,
+    /// which has no cheap unchanged-check and does not need one.
+    /// </summary>
+    public string? ETag
+    {
+        get => _http?.ETag;
+        set { if (_http is not null) _http.ETag = value; }
+    }
+
+    /// <summary>
     /// Opens a feed. Accepts an http(s) URL, a <c>file://</c> URI, a directory holding
     /// <c>index.json</c>, or the path to an <c>index.json</c> itself.
     /// </summary>

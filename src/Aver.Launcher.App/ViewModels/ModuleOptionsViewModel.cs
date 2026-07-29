@@ -87,6 +87,40 @@ public sealed class ModuleOptionsViewModel : ObservableObject
 
     public bool CanProceed => _best is { Usable: true };
 
+    /// <summary>
+    /// True when the current selection resolves to something OTHER than what is already installed.
+    /// </summary>
+    /// <remarks>
+    /// Set by the caller that knows what is installed. Drives an Apply button that is disabled while
+    /// the selection still describes the build in front of you, so the affordance says "nothing to
+    /// do" rather than reinstalling the same thing.
+    /// </remarks>
+    public bool WouldChange
+    {
+        get => _wouldChange;
+        private set => Set(ref _wouldChange, value);
+    }
+
+    private bool _wouldChange;
+
+    private string? _currentEdition;
+
+    /// <summary>Tells the model which edition is already installed, so it can spot a no-op.</summary>
+    public void SetCurrentEdition(string? edition)
+    {
+        _currentEdition = edition;
+        UpdateWouldChange();
+    }
+
+    private void UpdateWouldChange()
+        => WouldChange = _best is { Usable: true }
+                         && !string.Equals(_best.Edition, _currentEdition, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Label for the compact popup's action button.</summary>
+    public string ApplyLabel => _best is null
+        ? "No match"
+        : WouldChange ? $"SWITCH TO {_best.Edition.ToUpperInvariant()}" : "ALREADY INSTALLED";
+
     /// <summary>The edition the user will actually get.</summary>
     public EditionMatch? Best => _best;
 
@@ -101,8 +135,10 @@ public sealed class ModuleOptionsViewModel : ObservableObject
         _best = ranked.Count > 0 ? ranked[0] : null;
 
         Resolution = EditionMatcher.Describe(_best);
+        UpdateWouldChange();
         Raise(nameof(CanProceed));
         Raise(nameof(Best));
         Raise(nameof(ProceedLabel));
+        Raise(nameof(ApplyLabel));
     }
 }

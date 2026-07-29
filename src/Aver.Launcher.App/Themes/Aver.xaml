@@ -11,6 +11,7 @@
     <app:ZeroToVisibilityConverter x:Key="ZeroToVis" />
     <app:NonZeroToVisibilityConverter x:Key="NonZeroToVis" />
     <app:InverseBooleanConverter x:Key="Not" />
+    <app:NotToVisibilityConverter x:Key="NotToVis" />
     <app:KeyToBrushConverter x:Key="KeyToBrush" />
     <app:VerdictBrushConverter x:Key="VerdictBrush" />
 
@@ -236,6 +237,47 @@
         <Setter Property="BorderBrush" Value="{StaticResource Divider}" />
     </Style>
 
+    <!-- Dark checkbox. The stock one draws light chrome that no brush setting removes, which reads
+         as a foreign control on a near-black card. Applied as the default for the whole app. -->
+    <Style TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{StaticResource Text}" />
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Border x:Name="box" Width="16" Height="16" CornerRadius="3"
+                                Background="{StaticResource BgPanelHi}"
+                                BorderBrush="{StaticResource Divider}" BorderThickness="1"
+                                VerticalAlignment="Center" SnapsToDevicePixels="True">
+                            <TextBlock x:Name="tick" Text="&#xE73E;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="10" Foreground="White" Visibility="Collapsed"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ContentPresenter Margin="9,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="box" Property="Background" Value="{StaticResource Accent}" />
+                            <Setter TargetName="box" Property="BorderBrush" Value="{StaticResource Accent}" />
+                            <Setter TargetName="tick" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="box" Property="BorderBrush" Value="{StaticResource AccentHover}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{StaticResource TextFaint}" />
+                            <Setter TargetName="box" Property="Opacity" Value="0.45" />
+                            <Setter Property="Cursor" Value="Arrow" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- A row in the Options popup. Full-width hit area, left-aligned, hover-highlighted. -->
     <Style x:Key="MenuItemButton" TargetType="Button">
         <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -397,3 +439,4 @@
     </Style>
 
 </ResourceDictionary>
+

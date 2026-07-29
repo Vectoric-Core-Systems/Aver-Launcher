@@ -5,9 +5,62 @@ using Aver.Launcher.Core;
 namespace Aver.Launcher.App.ViewModels;
 
 /// <summary>One installed engine version, as an "engine slot" card.</summary>
-public sealed class EngineCardViewModel(EngineInstall install)
+public sealed class EngineCardViewModel(EngineInstall install) : ObservableObject
 {
+    private string? _updateVersion;
+
     public EngineInstall Install { get; } = install;
+
+    /// <summary>The newer version the feed offers for this edition, or null.</summary>
+    public string? UpdateVersion
+    {
+        get => _updateVersion;
+        private set { if (Set(ref _updateVersion, value)) { Raise(nameof(HasUpdate)); Raise(nameof(UpdateText)); } }
+    }
+
+    public bool HasUpdate => _updateVersion is not null;
+
+    public string UpdateText => _updateVersion is null ? string.Empty : $"UPDATE TO {_updateVersion}";
+
+    /// <summary>Set by the feed pass. Null clears the badge.</summary>
+    public void SetUpdate(string? version) => UpdateVersion = version;
+
+    private ModuleOptionsViewModel? _moduleOptions;
+
+    /// <summary>
+    /// The module selector behind this card's Options button.
+    /// </summary>
+    /// <remarks>
+    /// Lives on the card rather than in a dialog because it is now the card's primary detail view:
+    /// the chips came off the front to keep cards short, so this is where "what is in this build"
+    /// is answered. Null until the feed has been read, since without candidates there is nothing to
+    /// resolve a selection against.
+    /// </remarks>
+    public ModuleOptionsViewModel? ModuleOptions
+    {
+        get => _moduleOptions;
+        private set { if (Set(ref _moduleOptions, value)) Raise(nameof(HasModuleOptions)); }
+    }
+
+    public bool HasModuleOptions => _moduleOptions is not null;
+
+    /// <summary>
+    /// Seeds the selector, starting from what this install actually contains.
+    /// </summary>
+    /// <param name="candidates">
+    /// Every edition the feed knows, INCLUDING ones already installed. Without the installed one in
+    /// the list the resolver could not say "you already have this" and would offer to install what
+    /// is already there.
+    /// </param>
+    public void SetInstallOptions(
+        IReadOnlyList<(string Edition, string Version, IReadOnlyDictionary<string, bool> Options)> candidates)
+    {
+        ArgumentNullException.ThrowIfNull(candidates);
+        if (candidates.Count == 0) { ModuleOptions = null; return; }
+
+        ModuleOptions = new ModuleOptionsViewModel(
+            $"Modules in {Install.Label}", candidates, Install.Edition.Options);
+    }
 
     public string Version => Install.Version;
 
@@ -20,6 +73,27 @@ public sealed class EngineCardViewModel(EngineInstall install)
     public string InstalledText => Install.InstalledUtc == DateTime.MinValue
         ? "unknown"
         : Install.InstalledUtc.ToLocalTime().ToString("d MMM yyyy", CultureInfo.CurrentCulture);
+
+    /// <summary>
+    /// One line naming what is in this build, e.g. "6 modules: PBR materials, Voxi renderer + 4 more".
+    /// </summary>
+    /// <remarks>
+    /// Replaces the chip grid that used to sit on the card. The full list is one click away in the
+    /// Options popup; on the card it cost four lines of height per card and pushed the buttons of a
+    /// second card below the fold.
+    /// </remarks>
+    public string ModuleSummary
+    {
+        get
+        {
+            IReadOnlyList<string> inc = Install.Edition.IncludedModules;
+            if (inc.Count == 0) return "no optional modules";
+            string head = string.Join(", ", inc.Take(2));
+            return inc.Count <= 2
+                ? $"{inc.Count} modules: {head}"
+                : $"{inc.Count} modules: {head} + {inc.Count - 2} more";
+        }
+    }
 
     /// <summary>Optional modules present, as chips.</summary>
     public IReadOnlyList<string> Included => Install.Edition.IncludedModules;

@@ -35,6 +35,16 @@ public sealed class NonZeroToVisibilityConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>Visible when the bound boolean is FALSE.</summary>
+public sealed class NotToVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is bool b && b ? Visibility.Collapsed : Visibility.Visible;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 /// <summary>Boolean inverse, for IsEnabled bound to a busy flag.</summary>
 public sealed class InverseBooleanConverter : IValueConverter
 {

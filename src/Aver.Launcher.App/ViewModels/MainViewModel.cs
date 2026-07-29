@@ -38,8 +38,14 @@ public sealed class MainViewModel : ObservableObject
             p => _ = InstallWithOptionsAsync(p as EngineSlotViewModel),
             p => (p as EngineSlotViewModel)?.NotBusy == true);
         ModifyInstall = new RelayCommand(p => _ = ModifyInstallAsync(p as EngineCardViewModel));
-        VerifyFiles = new RelayCommand(p => VerifyInstall(p as EngineCardViewModel));
+        VerifyFiles = new RelayCommand(p => _ = VerifyInstallAsync(p as EngineCardViewModel));
         Uninstall = new RelayCommand(p => _ = UninstallAsync(p as EngineCardViewModel));
+        UpdateEngine = new RelayCommand(
+            p => _ = UpdateEngineAsync(p as EngineCardViewModel),
+            p => (p as EngineCardViewModel)?.HasUpdate == true);
+        ApplyModules = new RelayCommand(
+            p => _ = ApplyModulesAsync(p as EngineCardViewModel),
+            p => (p as EngineCardViewModel)?.ModuleOptions?.WouldChange == true);
         AddSlot = new RelayCommand(_ => AddEngineSlot(), _ => CanAddSlot);
         RemoveSlot = new RelayCommand(
             p => { if (p is EngineSlotViewModel s && s.NotBusy) Slots.Remove(s); },
@@ -54,6 +60,41 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand VerifyFiles { get; }
 
     public RelayCommand Uninstall { get; }
+
+    /// <summary>Installs the newer version of an already-installed edition.</summary>
+    public RelayCommand UpdateEngine { get; }
+
+    /// <summary>Installs the edition the card's module selection resolves to.</summary>
+    public RelayCommand ApplyModules { get; }
+
+    /// <summary>
+    /// Acts on a module selection made in a card's Options popup.
+    /// </summary>
+    /// <remarks>
+    /// Installs the resolved edition ALONGSIDE the current one rather than changing it: a build
+    /// cannot gain a module it was not compiled with. The shared bytes are hard-linked, so the
+    /// second edition costs a fraction of its size, and both stay launchable.
+    /// </remarks>
+    private async Task ApplyModulesAsync(EngineCardViewModel? card)
+    {
+        EditionMatch? target = card?.ModuleOptions?.Best;
+        if (card is null || target is null || !target.Usable) return;
+
+        SlotOption? option = _options.FirstOrDefault(
+            o => string.Equals(o.Edition, target.Edition, StringComparison.OrdinalIgnoreCase)
+                 && o.Version == target.Version);
+
+        if (option is null)
+        {
+            Status = $"{target.Edition} {target.Version} is already installed.";
+            return;
+        }
+
+        var slot = new EngineSlotViewModel(_options, option);
+        Slots.Add(slot);
+        Raise(nameof(HasSlots));
+        await InstallAsync(slot).ConfigureAwait(true);
+    }
 
     /// <summary>Adds an empty slot, on the newest version. The plus button.</summary>
     public RelayCommand AddSlot { get; }
@@ -138,34 +179,72 @@ public sealed class MainViewModel : ObservableObject
     /// releases is the normal state of a project that has not shipped, and dressing a 404 up as a
     /// failure would make a healthy setup look broken.
     /// </remarks>
-    private async Task LoadFeedAsync(IReadOnlyList<EngineInstall> installed)
+    private readonly FeedState _feedState = FeedState.Load();
+    private FeedIndex? _lastIndex;
+
+    /// <summary>
+    /// Polls the feed if the policy says it is due, then recomputes what is available.
+    /// </summary>
+    /// <param name="trigger">Why this check is happening. Decides whether it happens at all.</param>
+    private async Task LoadFeedAsync(IReadOnlyList<EngineInstall> installed,
+                                     CheckTrigger trigger = CheckTrigger.Manual)
     {
+        DateTime now = DateTime.UtcNow;
+
+        if (!UpdateCheckPolicy.ShouldCheck(trigger, _feedState, now))
+        {
+            // Not due. Re-use the last index so the lists stay populated rather than emptying.
+            if (_lastIndex is not null) ApplyIndex(_lastIndex, installed);
+            return;
+        }
+
         _options = [];
         FeedError = null;
         FeedNote = string.Empty;
         NothingAvailable = false;
 
-        FeedSource source = FeedSource.Open(_settings.FeedUrl);
+        FeedSource source = FeedSource.Open(_settings.FeedUrl) ;
+        source.ETag = _feedState.Etag;
         FeedResult result = await source.GetIndexAsync().ConfigureAwait(true);
 
         switch (result.Status)
         {
             case FeedStatus.Unreachable:
+                UpdateCheckPolicy.RecordFailure(_feedState, now);
+                _feedState.Save();
                 FeedError = result.Message;
                 return;
 
             case FeedStatus.NoReleases:
+                // Reached the host and got a definite answer, so this is a success for backoff
+                // purposes: retrying in a minute would not change "nothing has been published".
+                UpdateCheckPolicy.RecordSuccess(_feedState, now, source.ETag);
+                _feedState.Save();
                 NothingAvailable = true;
                 FeedNote = "Nothing available to install. "
                            + (result.Message ?? "No releases have been published yet.");
                 return;
 
             case FeedStatus.NotModified:
+                UpdateCheckPolicy.RecordSuccess(_feedState, now, source.ETag);
+                _feedState.Save();
+                if (_lastIndex is not null) ApplyIndex(_lastIndex, installed);
                 return;
 
             default:
                 break;
         }
+
+        UpdateCheckPolicy.RecordSuccess(_feedState, now, source.ETag);
+        _feedState.Save();
+        _lastIndex = result.Index;
+        ApplyIndex(result.Index!, installed);
+    }
+
+    /// <summary>Turns an index plus what is installed into slots, options and update badges.</summary>
+    private void ApplyIndex(FeedIndex index, IReadOnlyList<EngineInstall> installed)
+    {
+        FeedResult result = new(FeedStatus.Ok, index, null);
 
         var have = installed
             .Select(i => $"{i.Edition.Id}/{i.Version}")
@@ -197,11 +276,100 @@ public sealed class MainViewModel : ObservableObject
         Raise(nameof(CanAddSlot));
         Raise(nameof(AddSlotTip));
 
+        // Every edition the feed knows, installed or not. The card's module selector needs the
+        // installed one present, or it could not tell "already have this" from "switch to this".
+        var allCandidates = new List<(string, string, IReadOnlyDictionary<string, bool>)>();
+        foreach ((string edition, FeedEdition fe) in index.Editions)
+        {
+            foreach (string v in fe.Versions) allCandidates.Add((edition, v, fe.Options));
+        }
+
+        foreach (EngineCardViewModel card in Engines)
+        {
+            card.SetInstallOptions(allCandidates);
+            card.ModuleOptions?.SetCurrentEdition(card.Install.Edition.Id);
+        }
+
+        // Badge any installed edition that has a newer version on offer.
+        IReadOnlyList<UpdateAvailable> updates = UpdateFinder.Find(installed, index);
+        foreach (EngineCardViewModel card in Engines)
+        {
+            UpdateAvailable? u = updates.FirstOrDefault(
+                x => string.Equals(x.Edition, card.Install.Edition.Id, StringComparison.OrdinalIgnoreCase)
+                     && x.InstalledVersion == card.Version);
+            card.SetUpdate(u?.AvailableVersion);
+        }
+
+        UpdateCount = updates.Count;
+
         if (_options.Count == 0)
         {
             NothingAvailable = true;
             FeedNote = "Nothing available to install. Every version the feed offers is already here.";
         }
+    }
+
+    private int _updateCount;
+
+    /// <summary>How many installed editions have a newer version, for the header line.</summary>
+    public int UpdateCount
+    {
+        get => _updateCount;
+        private set { if (Set(ref _updateCount, value)) { Raise(nameof(HasUpdates)); Raise(nameof(UpdateSummary)); } }
+    }
+
+    public bool HasUpdates => _updateCount > 0;
+
+    public string UpdateSummary => _updateCount == 1
+        ? "1 engine has a newer version available."
+        : $"{_updateCount} engines have newer versions available.";
+
+    /// <summary>
+    /// Installs the newer version of an installed edition, then prunes older ones to keepVersions.
+    /// </summary>
+    /// <remarks>
+    /// Install first, verify, and only then remove: doing it the other way round turns a failed
+    /// download into no working engine. The version just installed is protected from the prune
+    /// regardless of the count.
+    /// </remarks>
+    private async Task UpdateEngineAsync(EngineCardViewModel? card)
+    {
+        if (card?.UpdateVersion is null) return;
+
+        SlotOption? target = _options.FirstOrDefault(
+            o => string.Equals(o.Edition, card.Install.Edition.Id, StringComparison.OrdinalIgnoreCase)
+                 && o.Version == card.UpdateVersion);
+        if (target is null)
+        {
+            Status = $"{card.UpdateVersion} is no longer offered by the feed.";
+            return;
+        }
+
+        var slot = new EngineSlotViewModel(_options, target);
+        Slots.Add(slot);
+        Raise(nameof(HasSlots));
+
+        await InstallAsync(slot).ConfigureAwait(true);
+
+        // Only prune once the new version is on disk and verified.
+        string root = _settings.EffectiveInstallRoot;
+        IReadOnlyList<EngineInstall> after = EngineInstallStore.Scan(root);
+        if (!after.Any(i => string.Equals(i.Edition.Id, target.Edition, StringComparison.OrdinalIgnoreCase)
+                            && i.Version == target.Version))
+        {
+            return;   // install failed; InstallAsync already reported why
+        }
+
+        IReadOnlyList<string> removed = InstallMaintenance.PruneOldVersions(
+            after, target.Edition, _settings.KeepVersions, target.Version, new WindowsFileSystemOps());
+
+        if (removed.Count > 0)
+        {
+            Status = $"Updated to {target.Version}; removed {string.Join(", ", removed)} "
+                     + $"(keeping {_settings.KeepVersions})";
+        }
+
+        await LoadAsync().ConfigureAwait(true);
     }
 
     /// <summary>
@@ -272,11 +440,23 @@ public sealed class MainViewModel : ObservableObject
         await InstallAsync(slot).ConfigureAwait(true);
     }
 
-    private void VerifyInstall(EngineCardViewModel? card)
+    /// <summary>
+    /// Re-hashes an install, off the UI thread.
+    /// </summary>
+    /// <remarks>
+    /// Verify reads roughly 21 MB and hashes all of it. Run inline on the dispatcher it froze the
+    /// window for the duration with no progress, which reads as a hang rather than as work.
+    /// </remarks>
+    private async Task VerifyInstallAsync(EngineCardViewModel? card)
     {
         if (card is null) return;
+
         Status = $"Verifying {card.Install.Label}...";
-        VerifyReport report = InstallMaintenance.Verify(card.Install);
+        var progress = new Progress<double>(f => Status = $"Verifying {card.Install.Label}... {f * 100:F0}%");
+
+        VerifyReport report = await Task.Run(
+            () => InstallMaintenance.Verify(card.Install, progress)).ConfigureAwait(true);
+
         Status = $"{card.Install.Label}: {report.Summary}";
     }
 
@@ -462,7 +642,7 @@ public sealed class MainViewModel : ObservableObject
         + "Use + above to add a version from the feed, or stage a build there with the\n"
         + "engine's scripts/stage-payload.ps1 and press Refresh.";
 
-    public async Task LoadAsync()
+    public async Task LoadAsync(CheckTrigger trigger = CheckTrigger.Manual)
     {
         Busy = true;
         Status = "Scanning installs...";
@@ -473,7 +653,7 @@ public sealed class MainViewModel : ObservableObject
             foreach (EngineInstall i in installs) Engines.Add(new EngineCardViewModel(i));
 
             Status = "Reading the feed...";
-            await LoadFeedAsync(installs).ConfigureAwait(true);
+            await LoadFeedAsync(installs, trigger).ConfigureAwait(true);
 
             Status = "Reading projects...";
             IReadOnlyList<ProjectEntry> projects = await Task.Run(() => ProjectLibrary.Load()).ConfigureAwait(true);
